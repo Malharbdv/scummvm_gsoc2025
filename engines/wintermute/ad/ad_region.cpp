@@ -53,9 +53,9 @@ AdRegion::~AdRegion() {
 
 //////////////////////////////////////////////////////////////////////////
 bool AdRegion::loadFile(const char *filename) {
-	char *buffer = (char *)BaseFileManager::getEngineInstance()->readWholeFile(filename);
+	char *buffer = (char *)_game->_fileManager->readWholeFile(filename);
 	if (buffer == nullptr) {
-		_gameRef->LOG(0, "AdRegion::LoadFile failed for file '%s'", filename);
+		_game->LOG(0, "AdRegion::loadFile failed for file '%s'", filename);
 		return STATUS_FAILED;
 	}
 
@@ -64,7 +64,7 @@ bool AdRegion::loadFile(const char *filename) {
 	setFilename(filename);
 
 	if (DID_FAIL(ret = loadBuffer(buffer, true))) {
-		_gameRef->LOG(0, "Error parsing REGION file '%s'", filename);
+		_game->LOG(0, "Error parsing REGION file '%s'", filename);
 	}
 
 
@@ -117,11 +117,11 @@ bool AdRegion::loadBuffer(char *buffer, bool complete) {
 
 	char *params;
 	int cmd;
-	BaseParser parser;
+	BaseParser parser(_game);
 
 	if (complete) {
 		if (parser.getCommand(&buffer, commands, &params) != TOKEN_REGION) {
-			_gameRef->LOG(0, "'REGION' keyword expected.");
+			_game->LOG(0, "'REGION' keyword expected.");
 			return STATUS_FAILED;
 		}
 		buffer = params;
@@ -210,7 +210,7 @@ bool AdRegion::loadBuffer(char *buffer, bool complete) {
 		}
 	}
 	if (cmd == PARSERR_TOKENNOTFOUND) {
-		_gameRef->LOG(0, "Syntax error in REGION definition");
+		_game->LOG(0, "Syntax error in REGION definition");
 		return STATUS_FAILED;
 	}
 
@@ -244,13 +244,13 @@ bool AdRegion::scCallMethod(ScScript *script, ScStack *stack, ScStack *thisStack
 
 
 //////////////////////////////////////////////////////////////////////////
-ScValue *AdRegion::scGetProperty(const Common::String &name) {
+ScValue *AdRegion::scGetProperty(const char *name) {
 	_scValue->setNULL();
 
 	//////////////////////////////////////////////////////////////////////////
 	// Type
 	//////////////////////////////////////////////////////////////////////////
-	if (name == "Type") {
+	if (strcmp(name, "Type") == 0) {
 		_scValue->setString("ad region");
 		return _scValue;
 	}
@@ -258,7 +258,7 @@ ScValue *AdRegion::scGetProperty(const Common::String &name) {
 	//////////////////////////////////////////////////////////////////////////
 	// Name
 	//////////////////////////////////////////////////////////////////////////
-	else if (name == "Name") {
+	else if (strcmp(name, "Name") == 0) {
 		_scValue->setString(_name);
 		return _scValue;
 	}
@@ -266,7 +266,7 @@ ScValue *AdRegion::scGetProperty(const Common::String &name) {
 	//////////////////////////////////////////////////////////////////////////
 	// Blocked
 	//////////////////////////////////////////////////////////////////////////
-	else if (name == "Blocked") {
+	else if (strcmp(name, "Blocked") == 0) {
 		_scValue->setBool(_blocked);
 		return _scValue;
 	}
@@ -274,7 +274,7 @@ ScValue *AdRegion::scGetProperty(const Common::String &name) {
 	//////////////////////////////////////////////////////////////////////////
 	// Decoration
 	//////////////////////////////////////////////////////////////////////////
-	else if (name == "Decoration") {
+	else if (strcmp(name, "Decoration") == 0) {
 		_scValue->setBool(_decoration);
 		return _scValue;
 	}
@@ -282,7 +282,7 @@ ScValue *AdRegion::scGetProperty(const Common::String &name) {
 	//////////////////////////////////////////////////////////////////////////
 	// Scale
 	//////////////////////////////////////////////////////////////////////////
-	else if (name == "Scale") {
+	else if (strcmp(name, "Scale") == 0) {
 		_scValue->setFloat(_zoom);
 		return _scValue;
 	}
@@ -290,7 +290,7 @@ ScValue *AdRegion::scGetProperty(const Common::String &name) {
 	//////////////////////////////////////////////////////////////////////////
 	// AlphaColor
 	//////////////////////////////////////////////////////////////////////////
-	else if (name == "AlphaColor") {
+	else if (strcmp(name, "AlphaColor") == 0) {
 		_scValue->setInt((int)_alpha);
 		return _scValue;
 	} else {

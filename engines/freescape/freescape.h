@@ -72,6 +72,7 @@ enum FreescapeAction {
 	kActionMoveLeft,
 	kActionMoveRight,
 	kActionShoot,
+	kActionActivate,
 	kActionIncreaseAngle,
 	kActionDecreaseAngle,
 	kActionChangeStepSize,
@@ -152,6 +153,7 @@ public:
 	void pushEvent(Common::Event &event);
 	void clearExitEvents();
 	bool isActionActive(const Common::CustomEventType &action);
+	bool isKeyPressed();
 
 private:
 	// for continuous events (keyDown)
@@ -193,6 +195,7 @@ public:
 	bool isCPC() { return _gameDescription->platform == Common::kPlatformAmstradCPC; }
 	bool isC64() { return _gameDescription->platform == Common::kPlatformC64; }
 
+	virtual void beforeStarting();
 	Common::Error run() override;
 
 	// UI
@@ -349,6 +352,7 @@ public:
 	EventManagerWrapper *_eventManager;
 	void processInput();
 	void resetInput();
+	void stopMovement();
 	void generateDemoInput();
 	virtual void pressedKey(const int keycode);
 	virtual void releasedKey(const int keycode);
@@ -372,7 +376,8 @@ public:
 	bool tryStepDown(Math::Vector3d currentPosition);
 	bool _hasFallen;
 	bool _isCollidingWithWall;
-	bool _isStepping;
+	bool _isSteppingUp;
+	bool _isSteppingDown;
 	bool _isFalling;
 	int _maxFallingDistance;
 	int _maxShield;
@@ -463,15 +468,16 @@ public:
 	// Sound
 	Audio::SoundHandle _soundFxHandle;
 	Audio::SoundHandle _musicHandle;
+	Audio::SoundHandle _movementSoundHandle;
 	Freescape::SizedPCSpeaker *_speaker;
 
 	bool _syncSound;
 	bool _firstSound;
 	bool _usePrerecordedSounds;
 	void waitForSounds();
-	void stopAllSounds();
+	void stopAllSounds(Audio::SoundHandle &handle);
 	bool isPlayingSound();
-	void playSound(int index, bool sync);
+	void playSound(int index, bool sync, Audio::SoundHandle &handle);
 	void playWav(const Common::Path &filename);
 	void playMusic(const Common::Path &filename);
 	void queueSoundConst(double hzFreq, int duration);
@@ -479,21 +485,22 @@ public:
 	void playSoundConst(double hzFreq, int duration, bool sync);
 	void playSoundSweepIncWL(double hzFreq1, double hzFreq2, double wlStepPerMS, int resolution, bool sync);
 	uint16 playSoundDOSSpeaker(uint16 startFrequency, soundSpeakerFx *speakerFxInfo);
-	void playSoundDOS(soundSpeakerFx *speakerFxInfo, bool sync);
+	void playSoundDOS(soundSpeakerFx *speakerFxInfo, bool sync, Audio::SoundHandle &handle);
 
 	virtual void playSoundFx(int index, bool sync);
 	virtual void loadSoundsFx(Common::SeekableReadStream *file, int offset, int number);
 	Common::HashMap<uint16, soundFx *> _soundsFx;
-	void loadSpeakerFxDOS(Common::SeekableReadStream *file, int offsetFreq, int offsetDuration);
+	void loadSpeakerFxDOS(Common::SeekableReadStream *file, int offsetFreq, int offsetDuration, int numberSounds);
 	void loadSpeakerFxZX(Common::SeekableReadStream *file, int sfxTable, int sfxData);
 	Common::HashMap<uint16, soundSpeakerFx *> _soundsSpeakerFx;
 
-	void playSoundZX(Common::Array<soundUnitZX> *data);
+	void playSoundZX(Common::Array<soundUnitZX> *data, Audio::SoundHandle &handle);
 	Common::HashMap<uint16, Common::Array<soundUnitZX>*> _soundsSpeakerFxZX;
 	int _soundIndexShoot;
 	int _soundIndexCollide;
+	int _soundIndexStepDown;
+	int _soundIndexStepUp;
 	int _soundIndexFall;
-	int _soundIndexClimb;
 	int _soundIndexMenu;
 	int _soundIndexStart;
 	int _soundIndexAreaChange;

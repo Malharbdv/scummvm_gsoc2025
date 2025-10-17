@@ -42,10 +42,10 @@ public:
 	BaseSurfaceOSystem(BaseGame *inGame);
 	~BaseSurfaceOSystem() override;
 
-	bool create(const Common::String &filename, bool defaultCK, byte ckRed, byte ckGreen, byte ckBlue, int lifeTime = -1, bool keepLoaded = false) override;
+	bool create(const char *filename, bool texture2D, bool defaultCK, byte ckRed, byte ckGreen, byte ckBlue, int lifeTime = -1, bool keepLoaded = false) override;
 	bool create(int width, int height) override;
 
-	bool setAlphaImage(const Common::String &filename) override;
+	bool setAlphaImage(const char *filename) override;
 
 	bool invalidate() override;
 
@@ -53,22 +53,16 @@ public:
 	bool startPixelOp() override;
 	bool endPixelOp() override;
 
-	bool displayTransRotate(int x, int y, float rotate, int32 hotspotX, int32 hotspotY, Rect32 rect, float zoomX, float zoomY, uint32 alpha = Graphics::kDefaultRgbaMod, Graphics::TSpriteBlendMode blendMode = Graphics::BLEND_NORMAL, bool mirrorX = false, bool mirrorY = false) override;
-	bool displayTransZoom(int x, int y, Rect32 rect, float zoomX, float zoomY, uint32 alpha = Graphics::kDefaultRgbaMod, Graphics::TSpriteBlendMode blendMode = Graphics::BLEND_NORMAL, bool mirrorX = false, bool mirrorY = false) override;
-	bool displayTrans(int x, int y, Rect32 rect, uint32 alpha = Graphics::kDefaultRgbaMod, Graphics::TSpriteBlendMode blendMode = Graphics::BLEND_NORMAL, bool mirrorX = false, bool mirrorY = false, int offsetX = 0, int offsetY = 0) override;
-	bool display(int x, int y, Rect32 rect, Graphics::TSpriteBlendMode blendMode = Graphics::BLEND_NORMAL, bool mirrorX = false, bool mirrorY = false) override;
-	bool displayTiled(int x, int y, Rect32 rect, int numTimesX, int numTimesY) override;
+	bool displayTransRotate(int x, int y, float rotate, int32 hotspotX, int32 hotspotY, Common::Rect32 rect, float zoomX, float zoomY, uint32 alpha = Graphics::kDefaultRgbaMod, Graphics::TSpriteBlendMode blendMode = Graphics::BLEND_NORMAL, bool mirrorX = false, bool mirrorY = false) override;
+	bool displayTransZoom(int x, int y, Common::Rect32 rect, float zoomX, float zoomY, uint32 alpha = Graphics::kDefaultRgbaMod, Graphics::TSpriteBlendMode blendMode = Graphics::BLEND_NORMAL, bool mirrorX = false, bool mirrorY = false) override;
+	bool displayTrans(int x, int y, Common::Rect32 rect, uint32 alpha = Graphics::kDefaultRgbaMod, Graphics::TSpriteBlendMode blendMode = Graphics::BLEND_NORMAL, bool mirrorX = false, bool mirrorY = false, int offsetX = 0, int offsetY = 0) override;
+	bool display(int x, int y, Common::Rect32 rect, Graphics::TSpriteBlendMode blendMode = Graphics::BLEND_NORMAL, bool mirrorX = false, bool mirrorY = false) override;
+	bool displayTiled(int x, int y, Common::Rect32 rect, int numTimesX, int numTimesY) override;
 	bool putSurface(const Graphics::Surface &surface, bool hasAlpha = false) override;
 	int getWidth() override {
-		if (_width == 0) {
-			finishLoad();
-		}
 		return _width;
 	}
 	int getHeight() override {
-		if (_height == 0) {
-			finishLoad();
-		}
 		return _height;
 	}
 	bool putPixel(int x, int y, byte r, byte g, byte b, byte a) override {
@@ -96,8 +90,8 @@ public:
 	Graphics::AlphaType getAlphaType() const { return _alphaType; }
 private:
 	Graphics::Surface *_surface;
-	bool finishLoad();
-	bool drawSprite(int x, int y, Rect32 *rect, Rect32 *newRect, Graphics::TransformStruct transformStruct);
+	bool loadImage();
+	bool drawSprite(int x, int y, Common::Rect32 *rect, Common::Rect32 *newRect, Graphics::TransformStruct transformStruct);
 	void writeAlpha(Graphics::Surface *surface, const Graphics::Surface *mask);
 
 	bool _pixelOpReady;

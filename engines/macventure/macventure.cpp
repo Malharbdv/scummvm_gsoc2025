@@ -156,6 +156,7 @@ Common::Error MacVentureEngine::run() {
 		}
 	} else {
 		setNewGameState();
+		_gui->drawTitle();
 	}
 	selectControl(kStartOrResume);
 
@@ -377,7 +378,7 @@ void MacVentureEngine::handleObjectSelect(ObjID objID, WindowReference win, bool
 		} else {
 			if (objID == 0) {
 				unselectAll();
-				objID = win;
+				objID = windata.objRef;
 			}
 			if (objID > 0) {
 				int currentObjectIndex = findObjectInArray(objID, _currentSelection);
@@ -892,6 +893,7 @@ void MacVentureEngine::updateExits() {
 	for (uint i = 0; i < exits.size(); i++)
 		_gui->updateExit(exits[i]);
 
+	_gui->resetExitBackgroundPattern();
 }
 
 int MacVentureEngine::findObjectInArray(ObjID objID, const Common::Array<ObjID> &list) {
@@ -1182,6 +1184,10 @@ bool MacVentureEngine::isObjVisible(ObjID objID) {
 
 bool MacVentureEngine::isObjClickable(ObjID objID) {
 	return _world->getObjAttr(objID, kAttrUnclickable) == 0;
+}
+
+bool MacVentureEngine::isObjDraggable(ObjID objID) {
+	return _world->isObjDraggable(objID);
 }
 
 bool MacVentureEngine::isObjSelected(ObjID objID) {

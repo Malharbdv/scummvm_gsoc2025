@@ -39,11 +39,11 @@ class UIObject;
 class AdResponse;
 class AdResponseBox : public BaseObject {
 public:
-	BaseObject *getNextAccessObject(BaseObject *CurrObject);
-	BaseObject *getPrevAccessObject(BaseObject *CurrObject);
+	BaseObject *getNextAccessObject(BaseObject *currObject);
+	BaseObject *getPrevAccessObject(BaseObject *currObject);
 	bool getObjects(BaseArray<UIObject *> &objects, bool interactiveOnly);
 
-	bool handleResponse(const AdResponse *response);
+	bool handleResponse(AdResponse *response);
 	void setLastResponseText(const char *text, const char *textOrig);
 	char *_lastResponseText;
 	char *_lastResponseTextOrig;
@@ -68,12 +68,12 @@ public:
 	void clearResponses();
 	AdResponseBox(BaseGame *inGame);
 	~AdResponseBox() override;
-	BaseArray<const AdResponse *> _responses;
+	BaseArray<AdResponse *> _responses;
 	BaseArray<UIButton *> _respButtons;
 	UIWindow *_window;
 	UIWindow *_shieldWindow;
 	bool _horizontal;
-	Rect32 _responseArea;
+	Common::Rect32 _responseArea;
 	int32 _verticalAlign;
 	TTextAlign _align;
 	bool loadFile(const char *filename);

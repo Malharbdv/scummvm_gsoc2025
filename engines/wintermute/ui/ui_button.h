@@ -40,7 +40,7 @@ public:
 	bool _stayPressed;
 	bool _centerImage;
 	bool _oneTimePress;
-	uint32 _oneTimePressTime;
+	uint32 _oneTimePressTime{};
 	DECLARE_PERSISTENT(UIButton, UIObject)
 	void press();
 	bool display() override { return display(0, 0); }
@@ -68,7 +68,7 @@ public:
 	bool saveAsText(BaseDynamicBuffer *buffer, int indent) override;
 
 	// scripting interface
-	ScValue *scGetProperty(const Common::String &name) override;
+	ScValue *scGetProperty(const char *name) override;
 	bool scSetProperty(const char *name, ScValue *value) override;
 	bool scCallMethod(ScScript *script, ScStack *stack, ScStack *thisStack, const char *name) override;
 	const char *scToString() override;

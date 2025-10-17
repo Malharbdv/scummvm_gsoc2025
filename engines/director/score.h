@@ -53,6 +53,8 @@ class Channel;
 class Sprite;
 class CastMember;
 class AudioDecoder;
+struct BehaviorElement;
+struct SpriteInfo;
 
 struct Label {
 	Common::String comment;
@@ -125,7 +127,7 @@ public:
 	bool refreshPointersForCastLib(uint16 castLib);
 
 	bool renderTransition(uint16 frameId, RenderMode mode);
-	void renderFrame(uint16 frameId, RenderMode mode = kRenderModeNormal);
+	void renderFrame(uint16 frameId, RenderMode mode = kRenderModeNormal, bool sound1Changed = true, bool sound2Changed = true);
 	void incrementFilmLoops();
 	void updateSprites(RenderMode mode = kRenderModeNormal, bool withClean = false);
 	bool renderPrePaletteCycle(RenderMode mode = kRenderModeNormal);
@@ -137,10 +139,17 @@ public:
 
 	void invalidateRectsForMember(CastMember *member);
 
-	void playSoundChannel(bool puppetOnly);
+	void playSoundChannel(bool puppetOnly, bool sound1Changed = true, bool sound2Changed = true);
 
 	Common::String formatChannelInfo();
 	bool processFrozenPlayScript();
+
+	Common::MemoryReadStreamEndian *getSpriteDetailsStream(int spriteIdx);
+
+	// They live in lingo/lingo-events.cpp
+	void killScriptInstances(int frameNum);
+	void createScriptInstances(int frameNum);
+	Datum createScriptInstance(BehaviorElement *behavior);
 
 private:
 	bool isWaitingForNextFrame();
@@ -159,11 +168,17 @@ private:
 
 	void seekToMemberInList(int frame);
 
+	void loadFrameSpriteDetails(bool skipLog);
+
+	BehaviorElement loadSpriteBehavior(Common::MemoryReadStreamEndian *stream, bool skipLog);
+	SpriteInfo loadSpriteInfo(int spriteId, bool skipLog);
+
 public:
 	Common::Array<Channel *> _channels;
 	Common::SortedArray<Label *> *_labels;
 	Common::HashMap<uint16, Common::String> _actions;
 	Common::HashMap<uint16, bool> _immediateActions;
+	Datum _scriptChannelScriptInstance;
 
 	Common::Array<Frame *> _scoreCache;
 
@@ -185,6 +200,8 @@ public:
 	int16 _numChannelsDisplayed;  // D7+, no-op in earlier versions
 	//  20 bytes in total
 
+	int16 _maxChannelsUsed; // max channel number used in the score, used to optimize rendering
+
 	uint _firstFramePosition;
 	uint _indexStart = 0;
 	uint _frameDataOffset = 0;
@@ -202,6 +219,7 @@ public:
 	uint32 _nextFrameDelay;
 	int _lastTempo;
 	int _waitForChannel;
+	int _waitForChannelCue;
 	int _waitForVideoChannel;
 	bool _waitForClick;
 	bool _waitForClickCursor;
@@ -212,6 +230,11 @@ public:
 	Cursor _defaultCursor;
 	CursorRef _currentCursor;
 	bool _skipTransition;
+
+	Common::Array<uint32> _spriteDetailOffsets;
+	Common::Array<bool> _spriteDetailAccessed;
+
+	bool _disableGoPlayUpdateStage;
 
 private:
 	DirectorEngine *_vm;
@@ -224,6 +247,7 @@ private:
 	DirectorSound *_soundManager;
 
 	int _previousBuildBotBuild = -1;
+	bool _firstRun = true;
 };
 
 } // End of namespace Director

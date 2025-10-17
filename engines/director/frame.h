@@ -22,6 +22,8 @@
 #ifndef DIRECTOR_FRAME_H
 #define DIRECTOR_FRAME_H
 
+#include "director/spriteinfo.h"
+
 namespace Image {
 class ImageDecoder;
 }
@@ -81,6 +83,7 @@ struct PaletteInfo {
 	byte colorCode;
 
 	uint32 spriteListIdx; // D6+
+	SpriteInfo spriteInfo; // D6+
 
 	PaletteInfo() {
 		paletteId = CastMemberID(0, 0);
@@ -98,6 +101,8 @@ struct PaletteInfo {
 struct MainChannels {
 	CastMemberID actionId;
 	uint32 scriptSpriteListIdx; // D6+
+	SpriteInfo scriptSpriteInfo; // D6+
+	Common::Array<BehaviorElement> behaviors; // D6+
 
 	uint16 transDuration;
 	uint8 transArea; // 1 - Whole Window, 0 - Changing Area
@@ -105,10 +110,13 @@ struct MainChannels {
 	TransitionType transType;
 	CastMemberID trans;
 	uint32 transSpriteListIdx; // D6+
+	SpriteInfo transSpriteInfo; // D6+
+
 	PaletteInfo palette;
 	uint8 tempo;
 	uint32 tempoSpriteListIdx; // D6+
-	uint16 tempoD6Flags;
+	uint16 tempoCuePoint;
+	SpriteInfo tempoSpriteInfo; // D6+
 
 	uint8 scoreCachedTempo;
 	CastMemberID scoreCachedPaletteId;
@@ -116,9 +124,11 @@ struct MainChannels {
 	CastMemberID sound1;
 	uint8 soundType1;
 	uint32 sound1SpriteListIdx; // D6+
+	SpriteInfo sound1SpriteInfo; // D6+
 	CastMemberID sound2;
 	uint8 soundType2;
 	uint32 sound2SpriteListIdx; // D6+
+	SpriteInfo sound2SpriteInfo; // D6+
 
 	byte colorTempo;
 	byte colorSound1;
@@ -130,34 +140,34 @@ struct MainChannels {
 	uint8 blend;
 
 	MainChannels() {
+		scriptSpriteListIdx = 0;
+
 		transDuration = 0;
-		transType = kTransNone;
 		transArea = 0;
 		transChunkSize = 0;
+		transType = kTransNone;
+		transSpriteListIdx = 0;
+
 		tempo = 0;
 		tempoSpriteListIdx = 0;
-		tempoD6Flags = 0;
+		tempoCuePoint = 0;
 
 		scoreCachedTempo = 0;
-		scoreCachedPaletteId = CastMemberID(0, 0);
 
-		sound1 = CastMemberID(0, 0);
-		sound2 = CastMemberID(0, 0);
 		soundType1 = 0;
-		soundType2 = 0;
 		sound1SpriteListIdx = 0;
-		sound2SpriteListIdx = 0;
 
-		actionId = CastMemberID(0, 0);
-		scriptSpriteListIdx = 0;
-		skipFrameFlag = 0;
-		blend = 0;
+		soundType2 = 0;
+		sound2SpriteListIdx = 0;
 
 		colorTempo = 0;
 		colorSound1 = 0;
 		colorSound2 = 0;
 		colorScript = 0;
 		colorTrans = 0;
+
+		skipFrameFlag = 0;
+		blend = 0;
 	}
 };
 

@@ -94,6 +94,7 @@ enum {
 	kDebugPaused,
 	kDebugPauseOnLoad,
 	kDebugSaving,
+	kDebugPaths,
 	kDebugMovieCast
 };
 
@@ -201,8 +202,8 @@ public:
 	void shiftPalette(int startIndex, int endIndex, bool reverse);
 	void syncPalette();
 	void clearPalettes();
-	PaletteV4 *getPalette(const CastMemberID &id);
-	bool hasPalette(const CastMemberID &id);
+	PaletteV4 *getPalette(CastMemberID id);
+	bool hasPalette(CastMemberID id);
 	void loadDefaultPalettes();
 
 	const Common::HashMap<CastMemberID, PaletteV4> &getLoadedPalettes() { return _loadedPalettes; }
@@ -274,6 +275,7 @@ public:
 	Archive *_mainArchive;
 	Common::Rect _fixStageRect;
 	Common::List<Common::String> _extraSearchPath;
+	bool _emulateMultiButtonMouse;
 
 	// Owner of all Archive objects.
 	Common::HashMap<Common::Path, Archive *, Common::Path::IgnoreCaseAndMac_Hash, Common::Path::IgnoreCaseAndMac_EqualTo> _allSeenResFiles;
@@ -304,6 +306,7 @@ public:
 	uint32 _loadSlowdownFactor;
 	uint32 _loadSlowdownCooldownTime;
 	int _fileIOType;
+	bool _vfwPaletteHack;
 
 private:
 	byte _currentPalette[768];

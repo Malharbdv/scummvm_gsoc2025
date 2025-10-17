@@ -57,18 +57,35 @@ Frame::Frame(const Frame &frame) {
 	_vm = frame._vm;
 	_numChannels = frame._numChannels;
 	_mainChannels.actionId = frame._mainChannels.actionId;
-	_mainChannels.transArea = frame._mainChannels.transArea;
+	_mainChannels.scriptSpriteListIdx = frame._mainChannels.scriptSpriteListIdx;
+	_mainChannels.behaviors = frame._mainChannels.behaviors;
+	_mainChannels.scriptSpriteInfo = frame._mainChannels.scriptSpriteInfo;
+
 	_mainChannels.transDuration = frame._mainChannels.transDuration;
-	_mainChannels.transType = frame._mainChannels.transType;
+	_mainChannels.transArea = frame._mainChannels.transArea;
 	_mainChannels.transChunkSize = frame._mainChannels.transChunkSize;
+	_mainChannels.transType = frame._mainChannels.transType;
+	_mainChannels.trans = frame._mainChannels.trans;
+	_mainChannels.transSpriteListIdx = frame._mainChannels.transSpriteListIdx;
+	_mainChannels.transSpriteInfo = frame._mainChannels.transSpriteInfo;
+
+	_mainChannels.palette = frame._mainChannels.palette;
 	_mainChannels.tempo = frame._mainChannels.tempo;
+	_mainChannels.tempoSpriteListIdx = frame._mainChannels.tempoSpriteListIdx;
+	_mainChannels.tempoCuePoint = frame._mainChannels.tempoCuePoint;
+	_mainChannels.tempoSpriteInfo = frame._mainChannels.tempoSpriteInfo;
+
 	_mainChannels.scoreCachedTempo = frame._mainChannels.scoreCachedTempo;
+	_mainChannels.scoreCachedPaletteId = frame._mainChannels.scoreCachedPaletteId;
+
 	_mainChannels.sound1 = frame._mainChannels.sound1;
-	_mainChannels.sound2 = frame._mainChannels.sound2;
 	_mainChannels.soundType1 = frame._mainChannels.soundType1;
+	_mainChannels.sound1SpriteListIdx = frame._mainChannels.sound1SpriteListIdx;
+	_mainChannels.sound1SpriteInfo = frame._mainChannels.sound1SpriteInfo;
+	_mainChannels.sound2 = frame._mainChannels.sound2;
 	_mainChannels.soundType2 = frame._mainChannels.soundType2;
-	_mainChannels.skipFrameFlag = frame._mainChannels.skipFrameFlag;
-	_mainChannels.blend = frame._mainChannels.blend;
+	_mainChannels.sound2SpriteListIdx = frame._mainChannels.sound2SpriteListIdx;
+	_mainChannels.sound2SpriteInfo = frame._mainChannels.sound2SpriteInfo;
 
 	_mainChannels.colorTempo = frame._mainChannels.colorTempo;
 	_mainChannels.colorSound1 = frame._mainChannels.colorSound1;
@@ -76,7 +93,8 @@ Frame::Frame(const Frame &frame) {
 	_mainChannels.colorScript = frame._mainChannels.colorScript;
 	_mainChannels.colorTrans = frame._mainChannels.colorTrans;
 
-	_mainChannels.palette = frame._mainChannels.palette;
+	_mainChannels.skipFrameFlag = frame._mainChannels.skipFrameFlag;
+	_mainChannels.blend = frame._mainChannels.blend;
 
 	_score = frame._score;
 
@@ -117,8 +135,6 @@ void Frame::writeMainChannels(Common::SeekableWriteStream *writeStream, uint16 v
 
 	if (version >= kFileVer400 && version < kFileVer500) {
 		writeMainChannelsD4(writeStream);
-	} else if (version >= kFileVer500 && version < kFileVer600) {
-		writeMainChannelsD5(writeStream);
 	} else if (version >= kFileVer500 && version < kFileVer600) {
 		writeMainChannelsD5(writeStream);
 	} else if (version >= kFileVer600 && version < kFileVer700) {
@@ -234,6 +250,8 @@ void Frame::readMainChannelsD2(Common::MemoryReadStreamEndian &stream, uint16 of
 				} else {
 					_mainChannels.palette.paletteId = CastMemberID(paletteId, DEFAULT_CAST_LIB);
 				}
+				if (!g_director->hasPalette(_mainChannels.palette.paletteId))
+					_mainChannels.palette.paletteId = CastMemberID();
 				if (!_mainChannels.palette.paletteId.isNull())
 					_mainChannels.scoreCachedPaletteId = _mainChannels.palette.paletteId;
 			}
@@ -340,7 +358,7 @@ void readSpriteDataD2(Common::SeekableReadStreamEndian &stream, Sprite &sprite, 
 			if (sprite._puppet) {
 				stream.readByte();
 			} else {
-				sprite._thickness = stream.readByte();
+				sprite._thickness = stream.readByte() & 0x7f;
 			}
 			break;
 		case 5:
@@ -902,6 +920,8 @@ void Frame::readMainChannelsD5(Common::MemoryReadStreamEndian &stream, uint16 of
 			break;
 		case 26:
 			_mainChannels.palette.paletteId.member = stream.readSint16();
+			if (!g_director->hasPalette(_mainChannels.palette.paletteId))
+				_mainChannels.palette.paletteId = CastMemberID();
 			if (!_mainChannels.palette.paletteId.isNull())
 				_mainChannels.scoreCachedPaletteId = _mainChannels.palette.paletteId;
 			break;
@@ -956,7 +976,7 @@ void Frame::readMainChannelsD5(Common::MemoryReadStreamEndian &stream, uint16 of
 
 	if (stream.pos() > finishPosition) {
 		// This means that the relevant `case` label reads too many bytes and must be split
-		error("Frame::readMainChannelsD5(): Read %" PRId64 "extra bytes", stream.pos() - finishPosition);
+		error("Frame::readMainChannelsD5(): Read %" PRId64 " extra bytes", stream.pos() - finishPosition);
 	}
 
 	_mainChannels.transChunkSize = CLIP<byte>(_mainChannels.transChunkSize, 0, 128);
@@ -1226,6 +1246,7 @@ void Frame::readMainChannelsD6(Common::MemoryReadStreamEndian &stream, uint16 of
 			break;
 		case 0+4:
 			_mainChannels.scriptSpriteListIdx = stream.readUint32();
+			break;
 		case 0+6:
 			_mainChannels.scriptSpriteListIdx = stream.readUint16();
 			break;
@@ -1233,8 +1254,11 @@ void Frame::readMainChannelsD6(Common::MemoryReadStreamEndian &stream, uint16 of
 			_mainChannels.colorScript = stream.readByte();
 			break;
 		case 0+9:
-			stream.read(unk, 15); // alignment bytes
-			hexdumpIfNotZero(unk, 15, "Frame::readMainChannelsD6(): script.unk: ");
+			{
+				int bytes = MIN<int>(finishPosition - stream.pos(), 15);
+				stream.read(unk, bytes); // alignment bytes
+				hexdumpIfNotZero(unk, bytes, "Frame::readMainChannelsD6(): script.unk: ");
+			}
 			break;
 
 		// Tempo
@@ -1245,7 +1269,7 @@ void Frame::readMainChannelsD6(Common::MemoryReadStreamEndian &stream, uint16 of
 			_mainChannels.tempoSpriteListIdx = stream.readUint16();
 			break;
 		case 24+4:
-			_mainChannels.tempoD6Flags = stream.readUint16();
+			_mainChannels.tempoCuePoint = stream.readUint16();
 			break;
 		case 24+6:
 			_mainChannels.tempo = stream.readByte();
@@ -1256,8 +1280,11 @@ void Frame::readMainChannelsD6(Common::MemoryReadStreamEndian &stream, uint16 of
 			_mainChannels.colorTempo = stream.readByte();
 			break;
 		case 24+8:
-			stream.read(unk, 16); // alignment bytes
-			hexdumpIfNotZero(unk, 16, "Frame::readMainChannelsD6(): tempo.unk: ");
+			{
+				int bytes = MIN<int>(finishPosition - stream.pos(), 16);
+				stream.read(unk, bytes); // alignment bytes
+				hexdumpIfNotZero(unk, bytes, "Frame::readMainChannelsD6(): tempo.unk: ");
+			}
 			break;
 
 
@@ -1278,8 +1305,11 @@ void Frame::readMainChannelsD6(Common::MemoryReadStreamEndian &stream, uint16 of
 			_mainChannels.colorTrans = stream.readByte();
 			break;
 		case 48+9:
-			stream.read(unk, 15); // alignment bytes
-			hexdumpIfNotZero(unk, 15, "Frame::readMainChannelsD6(): trans.unk: ");
+			{
+				int bytes = MIN<int>(finishPosition - stream.pos(), 15);
+				stream.read(unk, bytes); // alignment bytes
+				hexdumpIfNotZero(unk, bytes, "Frame::readMainChannelsD6(): trans.unk: ");
+			}
 			break;
 
 		// Sound2
@@ -1299,8 +1329,11 @@ void Frame::readMainChannelsD6(Common::MemoryReadStreamEndian &stream, uint16 of
 			_mainChannels.colorSound2 = stream.readByte();
 			break;
 		case 72+9:
-			stream.read(unk, 15); // alignment bytes
-			hexdumpIfNotZero(unk, 15, "Frame::readMainChannelsD6(): sound2.unk: ");
+			{
+				int bytes = MIN<int>(finishPosition - stream.pos(), 15);
+				stream.read(unk, bytes); // alignment bytes
+				hexdumpIfNotZero(unk, bytes, "Frame::readMainChannelsD6(): sound2.unk: ");
+			}
 			break;
 
 		// Sound1
@@ -1320,8 +1353,11 @@ void Frame::readMainChannelsD6(Common::MemoryReadStreamEndian &stream, uint16 of
 			_mainChannels.colorSound1 = stream.readByte();
 			break;
 		case 96+9:
-			stream.read(unk, 15); // alignment bytes
-			hexdumpIfNotZero(unk, 15, "Frame::readMainChannelsD6(): sound1.unk: ");
+			{
+				int bytes = MIN<int>(finishPosition - stream.pos(), 15);
+				stream.read(unk, bytes); // alignment bytes
+				hexdumpIfNotZero(unk, bytes, "Frame::readMainChannelsD6(): sound1.unk: ");
+			}
 			break;
 
 		// Palette
@@ -1330,6 +1366,8 @@ void Frame::readMainChannelsD6(Common::MemoryReadStreamEndian &stream, uint16 of
 			break;
 		case 120+2:
 			_mainChannels.palette.paletteId.member = stream.readSint16();
+			if (!g_director->hasPalette(_mainChannels.palette.paletteId))
+				_mainChannels.palette.paletteId = CastMemberID();
 			if (!_mainChannels.palette.paletteId.isNull())
 				_mainChannels.scoreCachedPaletteId = _mainChannels.palette.paletteId;
 			break;
@@ -1372,8 +1410,11 @@ void Frame::readMainChannelsD6(Common::MemoryReadStreamEndian &stream, uint16 of
 			_mainChannels.palette.spriteListIdx = stream.readUint16();
 			break;
 		case 120+20:
-			stream.read(unk, 4); // alignment bytes
-			hexdumpIfNotZero(unk, 4, "Frame::readMainChannelsD6(): palette.unk: ");
+			{
+				int bytes = MIN<int>(finishPosition - stream.pos(), 4);
+				stream.read(unk, bytes); // alignment bytes
+				hexdumpIfNotZero(unk, bytes, "Frame::readMainChannelsD6(): palette.unk: ");
+			}
 			break;
 
 		// 144 bytes (24 * 6)
@@ -1387,7 +1428,7 @@ void Frame::readMainChannelsD6(Common::MemoryReadStreamEndian &stream, uint16 of
 
 	if (stream.pos() > finishPosition) {
 		// This means that the relevant `case` label reads too many bytes and must be split
-		error("Frame::readMainChannelsD6(): Read %" PRId64 "extra bytes", stream.pos() - finishPosition);
+		error("Frame::readMainChannelsD6(): Read %" PRId64 " extra bytes", stream.pos() - finishPosition);
 	}
 
 	_mainChannels.transChunkSize = CLIP<byte>(_mainChannels.transChunkSize, 0, 128);
@@ -1410,7 +1451,7 @@ void Frame::writeMainChannelsD6(Common::SeekableWriteStream *writeStream) {
 
 	// Tempo
 	writeStream->writeUint32BE(_mainChannels.tempoSpriteListIdx);			// 24+0
-	writeStream->writeUint16BE(_mainChannels.tempoD6Flags);					// 24+4
+	writeStream->writeUint16BE(_mainChannels.tempoCuePoint);					// 24+4
 	writeStream->writeByte(_mainChannels.tempo);							// 24+6
 	writeStream->writeByte(_mainChannels.colorTempo);						// 24+7
 	writePadding(writeStream, 16);											// 24+8
@@ -1691,8 +1732,11 @@ void Frame::readMainChannelsD7(Common::MemoryReadStreamEndian &stream, uint16 of
 			_mainChannels.colorScript = stream.readByte();
 			break;
 		case 0+9:
-			stream.read(unk, 39); // alignment bytes
-			hexdumpIfNotZero(unk, 39, "Frame::readMainChannelsD7(): script.unk: ");
+			{
+				int bytes = MIN<int>(finishPosition - stream.pos(), 39);
+				stream.read(unk, bytes); // alignment bytes
+				hexdumpIfNotZero(unk, bytes, "Frame::readMainChannelsD6(): script.unk: ");
+			}
 			break;
 
 		// Tempo
@@ -1703,7 +1747,7 @@ void Frame::readMainChannelsD7(Common::MemoryReadStreamEndian &stream, uint16 of
 			_mainChannels.tempoSpriteListIdx = stream.readUint16();
 			break;
 		case 48+4:
-			_mainChannels.tempoD6Flags = stream.readUint16();
+			_mainChannels.tempoCuePoint = stream.readUint16();
 			break;
 		case 48+6:
 			_mainChannels.tempo = stream.readByte();
@@ -1714,8 +1758,11 @@ void Frame::readMainChannelsD7(Common::MemoryReadStreamEndian &stream, uint16 of
 			_mainChannels.colorTempo = stream.readByte();
 			break;
 		case 48+8:
-			stream.read(unk, 40); // alignment bytes
-			hexdumpIfNotZero(unk, 40, "Frame::readMainChannelsD7(): tempo.unk: ");
+			{
+				int bytes = MIN<int>(finishPosition - stream.pos(), 40);
+				stream.read(unk, bytes); // alignment bytes
+				hexdumpIfNotZero(unk, bytes, "Frame::readMainChannelsD6(): tempo.unk: ");
+			}
 			break;
 
 		// Transition
@@ -1735,8 +1782,11 @@ void Frame::readMainChannelsD7(Common::MemoryReadStreamEndian &stream, uint16 of
 			_mainChannels.colorTrans = stream.readByte();
 			break;
 		case 96+9:
-			stream.read(unk, 39); // alignment bytes
-			hexdumpIfNotZero(unk, 39, "Frame::readMainChannelsD7(): trans.unk: ");
+			{
+				int bytes = MIN<int>(finishPosition - stream.pos(), 39);
+				stream.read(unk, bytes); // alignment bytes
+				hexdumpIfNotZero(unk, bytes, "Frame::readMainChannelsD6(): trans.unk: ");
+			}
 			break;
 
 		// Sound2
@@ -1756,8 +1806,11 @@ void Frame::readMainChannelsD7(Common::MemoryReadStreamEndian &stream, uint16 of
 			_mainChannels.colorSound2 = stream.readByte();
 			break;
 		case 144+9:
-			stream.read(unk, 39); // alignment bytes
-			hexdumpIfNotZero(unk, 39, "Frame::readMainChannelsD7(): sound2.unk: ");
+			{
+				int bytes = MIN<int>(finishPosition - stream.pos(), 39);
+				stream.read(unk, bytes); // alignment bytes
+				hexdumpIfNotZero(unk, bytes, "Frame::readMainChannelsD6(): sound2.unk: ");
+			}
 			break;
 
 		// Sound1
@@ -1777,8 +1830,11 @@ void Frame::readMainChannelsD7(Common::MemoryReadStreamEndian &stream, uint16 of
 			_mainChannels.colorSound1 = stream.readByte();
 			break;
 		case 192+9:
-			stream.read(unk, 39); // alignment bytes
-			hexdumpIfNotZero(unk, 39, "Frame::readMainChannelsD7(): sound1.unk: ");
+			{
+				int bytes = MIN<int>(finishPosition - stream.pos(), 39);
+				stream.read(unk, bytes); // alignment bytes
+				hexdumpIfNotZero(unk, bytes, "Frame::readMainChannelsD6(): sound1.unk: ");
+			}
 			break;
 
 		// Palette
@@ -1787,6 +1843,8 @@ void Frame::readMainChannelsD7(Common::MemoryReadStreamEndian &stream, uint16 of
 			break;
 		case 240+2:
 			_mainChannels.palette.paletteId.member = stream.readSint16();
+			if (!g_director->hasPalette(_mainChannels.palette.paletteId))
+				_mainChannels.palette.paletteId = CastMemberID();
 			if (!_mainChannels.palette.paletteId.isNull())
 				_mainChannels.scoreCachedPaletteId = _mainChannels.palette.paletteId;
 			break;
@@ -1829,8 +1887,11 @@ void Frame::readMainChannelsD7(Common::MemoryReadStreamEndian &stream, uint16 of
 			_mainChannels.palette.spriteListIdx = stream.readUint16();
 			break;
 		case 240+20:
-			stream.read(unk, 28); // alignment bytes
-			hexdumpIfNotZero(unk, 28, "Frame::readMainChannelsD7(): palette.unk: ");
+			{
+				int bytes = MIN<int>(finishPosition - stream.pos(), 28);
+				stream.read(unk, bytes); // alignment bytes
+				hexdumpIfNotZero(unk, bytes, "Frame::readMainChannelsD6(): palette.unk: ");
+			}
 			break;
 
 		// 288 bytes (48 * 6)
@@ -1844,7 +1905,7 @@ void Frame::readMainChannelsD7(Common::MemoryReadStreamEndian &stream, uint16 of
 
 	if (stream.pos() > finishPosition) {
 		// This means that the relevant `case` label reads too many bytes and must be split
-		error("Frame::readMainChannelsD7(): Read %" PRId64 "extra bytes", stream.pos() - finishPosition);
+		error("Frame::readMainChannelsD7(): Read %" PRId64 " extra bytes", stream.pos() - finishPosition);
 	}
 
 	_mainChannels.transChunkSize = CLIP<byte>(_mainChannels.transChunkSize, 0, 128);
@@ -1861,7 +1922,7 @@ void Frame::writeMainChannelsD7(Common::SeekableWriteStream *writeStream) {
 
 	// Tempo
 	writeStream->writeUint32BE(_mainChannels.tempoSpriteListIdx);			// 48+0
-	writeStream->writeUint16BE(_mainChannels.tempoD6Flags);					// 48+4
+	writeStream->writeUint16BE(_mainChannels.tempoCuePoint);					// 48+4
 	writeStream->writeByte(_mainChannels.tempo);							// 48+6
 	writeStream->writeByte(_mainChannels.colorTempo);						// 48+7
 	writePadding(writeStream, 40);											// 48+8
@@ -2161,13 +2222,13 @@ Common::String Frame::formatChannelInfo() {
 	for (int i = 0; i < _numChannels; i++) {
 		Sprite &sprite = *_sprites[i + 1];
 		if (sprite._castId.member) {
-			result += Common::String::format("CH: %-3d castId: %s, [inkData: 0x%02x [ink: %d, trails: %d, stretch: %d, line: %d], %dx%d@%d,%d type: %d (%s) fg: %d bg: %d], script: %s, colorcode: 0x%x, blendAmount: 0x%x, blend: 0x%x, unk3: 0x%x\n",
+			result += Common::String::format("CH: %-3d castId: %s, [inkData: 0x%02x [ink: %d, trails: %d, stretch: %d, line: %d], %dx%d@%d,%d type: %d (%s) fg: %d bg: %d], script: %s, colorcode: 0x%x, blendAmount: 0x%x, unk3: 0x%x\n",
 				i + 1, sprite._castId.asString().c_str(), sprite._inkData,
 				sprite._ink, sprite._trails, sprite._stretch, sprite._thickness, sprite._width, sprite._height,
 				sprite._startPoint.x, sprite._startPoint.y,
 				sprite._spriteType, spriteType2str(sprite._spriteType), sprite._foreColor,
 				sprite._backColor, sprite._scriptId.asString().c_str(), sprite._colorcode,
-				sprite._blendAmount, sprite._blend, sprite._unk3);
+				sprite._blendAmount, sprite._unk3);
 		} else {
 			result += Common::String::format("CH: %-3d castId: 000\n", i + 1);
 		}

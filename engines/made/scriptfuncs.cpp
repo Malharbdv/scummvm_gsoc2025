@@ -32,6 +32,7 @@
 
 #include "common/config-manager.h"
 
+#include "graphics/wincursor.h"
 #include "graphics/cursorman.h"
 #include "graphics/surface.h"
 
@@ -49,10 +50,10 @@ ScriptFunctions::ScriptFunctions(MadeEngine *vm) : _vm(vm), _soundStarted(false)
 
 ScriptFunctions::~ScriptFunctions() {
 	for (uint i = 0; i < _externalFuncs.size(); ++i)
-			delete _externalFuncs[i];
+		delete _externalFuncs[i];
 
-	_vm->_system->getMixer()->stopHandle(_pcSpeakerHandle1);
-	_vm->_system->getMixer()->stopHandle(_pcSpeakerHandle2);
+	delete _pcSpeaker1;
+	delete _pcSpeaker2;
 }
 
 typedef Common::Functor2Mem<int16, int16*, int16, ScriptFunctions> ExternalScriptFunc;
@@ -632,11 +633,16 @@ int16 ScriptFunctions::sfSetFontOutline(int16 argc, int16 *argv) {
 }
 
 int16 ScriptFunctions::sfLoadMouseCursor(int16 argc, int16 *argv) {
-	PictureResource *flex = _vm->_res->getPicture(argv[2]);
-	if (flex) {
-		Graphics::Surface *surf = flex->getPicture();
-		CursorMan.replaceCursor(*surf, argv[1], argv[0], 0);
-		_vm->_res->freeResource(flex);
+
+	if (_vm->_useWinCursors) {
+		debug(4, "sfLoadMouseCursor: Not replacing mouse cursor, hand already active");
+	} else {
+		PictureResource *flex = _vm->_res->getPicture(argv[2]);
+		if (flex) {
+			Graphics::Surface *surf = flex->getPicture();
+			CursorMan.replaceCursor(*surf, argv[1], argv[0], 0);
+			_vm->_res->freeResource(flex);
+		}
 	}
 	return 0;
 }

@@ -39,7 +39,7 @@ class PartEmitter : public BaseObject {
 public:
 	DECLARE_PERSISTENT(PartEmitter, BaseObject)
 
-	PartEmitter(BaseGame *inGame, BaseScriptHolder *Owner);
+	PartEmitter(BaseGame *inGame, BaseScriptHolder *owner);
 	~PartEmitter() override;
 
 	int32 _width;
@@ -81,7 +81,7 @@ public:
 	int32 _maxBatches;
 	int32 _batchesGenerated;
 
-	Rect32 _border;
+	Common::Rect32 _border;
 	int32 _borderThicknessLeft;
 	int32 _borderThicknessRight;
 	int32 _borderThicknessTop;
@@ -111,20 +111,20 @@ public:
 	bool setBorder(int x, int y, int width, int height);
 	bool setBorderThickness(int thicknessLeft, int thicknessRight, int thicknessTop, int thicknessBottom);
 
-	bool addForce(const Common::String &name, PartForce::TForceType type, int posX, int posY, float angle, float strength);
-	bool removeForce(const Common::String &name);
+	bool addForce(const char *name, PartForce::TForceType type, int posX, int posY, float angle, float strength);
+	bool removeForce(const char *name);
 
 	BaseArray<PartForce *> _forces;
 
 	// scripting interface
-	ScValue *scGetProperty(const Common::String &name) override;
+	ScValue *scGetProperty(const char *name) override;
 	bool scSetProperty(const char *name, ScValue *value) override;
 	bool scCallMethod(ScScript *script, ScStack *stack, ScStack *thisStack, const char *name) override;
 	const char *scToString() override;
 
 private:
-	PartForce *addForceByName(const Common::String &name);
-	int static compareZ(const void *obj1, const void *obj2);
+	PartForce *addForceByName(const char *name);
+	static int32 compareZ(const void *obj1, const void *obj2);
 	bool initParticle(PartParticle *particle, uint32 currentTime, uint32 timerDelta);
 	bool updateInternal(uint32 currentTime, uint32 timerDelta);
 	uint32 _lastGenTime;

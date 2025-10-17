@@ -97,8 +97,8 @@ void FrameNode::setTransformation(int slot, DXVector3 pos, DXVector3 scale, DXQu
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool FrameNode::loadFromXData(const Common::String &filename, XModel *model, XFileData *xobj) {
-	_gameRef->miniUpdate();
+bool FrameNode::loadFromXData(const char *filename, XModel *model, XFileData *xobj) {
+	_game->miniUpdate();
 
 	bool res = true;
 
@@ -111,13 +111,13 @@ bool FrameNode::loadFromXData(const Common::String &filename, XModel *model, XFi
 	}
 
 	if (objectType == kXClassMesh) { // load a child mesh
-		XMesh *mesh = _gameRef->_renderer3D->createXMesh();
+		XMesh *mesh = _game->_renderer3D->createXMesh();
 		res = mesh->loadFromXData(filename, xobj);
 		if (res) {
 			_meshes.add(mesh);
 			return true;
 		} else {
-			delete mesh;
+			SAFE_DELETE(mesh);
 			return false;
 		}
 	} else if (objectType == kXClassFrameTransformMatrix) { // load the transformation matrix
@@ -137,13 +137,13 @@ bool FrameNode::loadFromXData(const Common::String &filename, XModel *model, XFi
 	} else if (objectType == kXClassAnimation) { // load a single animation (shouldn't happen here)
 		return model->loadAnimation(filename, xobj);
 	} else if (objectType == kXClassFrame) { // create a new child frame
-		FrameNode *childFrame = new FrameNode(_gameRef);
+		FrameNode *childFrame = new FrameNode(_game);
 
 		// get the name of the child frame
 		res = XModel::loadName(childFrame, xobj);
 		if (!res) {
 			BaseEngine::LOG(0, "Error loading frame name");
-			delete childFrame;
+			SAFE_DELETE(childFrame);
 			return res;
 		}
 
@@ -160,7 +160,7 @@ bool FrameNode::loadFromXData(const Common::String &filename, XModel *model, XFi
 		if (res)
 			_frames.add(childFrame);
 		else
-			delete childFrame;
+			SAFE_DELETE(childFrame);
 		return res;
 	} else if (objectType == kXClassAnimTicksPerSecond) {
 		if (!xobj->getXAnimTicksPerSecondObject()) {
@@ -175,7 +175,7 @@ bool FrameNode::loadFromXData(const Common::String &filename, XModel *model, XFi
 	return true;
 }
 
-bool FrameNode::mergeFromXData(const Common::String &filename, XModel *model, XFileData *xobj) {
+bool FrameNode::mergeFromXData(const char *filename, XModel *model, XFileData *xobj) {
 	bool res = true;
 
 	// get the type of the object

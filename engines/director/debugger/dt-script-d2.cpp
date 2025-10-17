@@ -20,6 +20,8 @@
  */
 
 #include "director/director.h"
+#include "director/movie.h"
+#include "director/cast.h"
 #include "director/debugger/dt-internal.h"
 
 #include "director/debugger.h"
@@ -504,12 +506,23 @@ public:
 			}
 
 			ScriptContext *context = getScriptContext(obj, _script.id, *node->name);
-			ImGuiScript script = toImGuiScript(_script.type, CastMemberID(context->_id, _script.id.castLib), *node->name);
-			script.byteOffsets = context->_functionByteOffsets[script.handlerId];
-			script.moviePath = _script.moviePath;
-			script.handlerName = *node->name;
-			setScriptToDisplay(script);
-			_state->_dbg._goToDefinition = true;
+			if (context) {
+				ImGuiScript script = toImGuiScript(_script.type, CastMemberID(context->_id, _script.id.castLib), *node->name);
+				const Director::Movie *movie = g_director->getCurrentMovie();
+
+				int castId = context->_id;
+				bool childScript = false;
+				if (castId == -1) {
+					castId = movie->getCast()->getCastIdByScriptId(context->_parentNumber);
+					childScript = true;
+				}
+				script.byteOffsets = context->_functionByteOffsets[script.handlerId];
+				script.moviePath = _script.moviePath;
+
+				script.handlerName = formatHandlerName(context->_scriptId, castId, script.handlerId, context->_scriptType, childScript);
+				setScriptToDisplay(script);
+				_state->_dbg._goToDefinition = true;
+			}
 		}
 		ImGui::SameLine();
 		for (uint i = 0; i < node->args->size(); i++) {

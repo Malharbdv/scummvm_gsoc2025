@@ -51,19 +51,20 @@ public:
 	bool finishThreads();
 	bool copyParameters(ScStack *stack);
 
+	void afterLoad();
+
 	ScValue *_operand;
 	ScValue *_reg1;
 	bool _freezable;
 	bool resume();
 	bool pause();
-	bool canHandleEvent(const Common::String &eventName) const;
-	bool canHandleMethod(const Common::String &methodName) const;
-	bool createThread(ScScript *original, uint32 initIP, const Common::String &eventName);
-	bool createMethodThread(ScScript *original, const Common::String &methodName);
-	ScScript *invokeEventHandler(const Common::String &eventName, bool unbreakable = false);
+	bool canHandleEvent(const char *eventName);
+	bool canHandleMethod(const char *methodName);
+	bool createThread(ScScript *original, uint32 initIP, const char *eventName);
+	bool createMethodThread(ScScript *original, const char *methodName);
+	ScScript *invokeEventHandler(const char *eventName, bool unbreakable = false);
 	uint32 _timeSlice;
 	DECLARE_PERSISTENT(ScScript, BaseClass)
-	void afterLoad();
 	void runtimeError(const char *fmt, ...);
 	bool run();
 	bool finish(bool includingThreads = false);
@@ -77,9 +78,9 @@ public:
 	TScriptState _state;
 	TScriptState _origState;
 	ScValue *getVar(char *name);
-	uint32 getFuncPos(const Common::String &name);
-	uint32 getEventPos(const Common::String &name) const;
-	uint32 getMethodPos(const Common::String &name) const;
+	uint32 getFuncPos(const char *name);
+	uint32 getEventPos(const char *name);
+	uint32 getMethodPos(const char *name);
 	typedef struct {
 		uint32 magic;
 		uint32 version;
@@ -91,7 +92,7 @@ public:
 		uint32 methodTable;
 	} TScriptHeader;
 
-	TScriptHeader _header;
+	TScriptHeader _header{};
 
 	typedef struct {
 		char *name;
@@ -113,7 +114,7 @@ public:
 		char *dll_name;
 		TCallType call_type;
 		TExternalType returns;
-		int32 nu_params;
+		int32 numParams;
 		TExternalType *params;
 	} TExternalFunction;
 

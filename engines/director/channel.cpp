@@ -35,7 +35,6 @@
 #include "director/castmember/movie.h"
 
 #include "graphics/macgui/mactext.h"
-#include "graphics/macgui/mactextwindow.h"
 #include "graphics/macgui/macbutton.h"
 
 namespace Director {
@@ -62,6 +61,14 @@ Channel::Channel(Score *sc, Sprite *sp, int priority) {
 
 	_visible = true;
 	_dirty = true;
+
+	if (sp) {
+		_startFrame = sp->_spriteInfo.startFrame;
+		_endFrame = sp->_spriteInfo.endFrame;
+	} else {
+		_startFrame = -1;
+		_endFrame = -1;
+	}
 }
 
 Channel::Channel(const Channel &channel) {
@@ -88,16 +95,16 @@ Channel& Channel::operator=(const Channel &channel) {
 	_visible = channel._visible;
 	_dirty = channel._dirty;
 
+	_startFrame = channel._startFrame;
+	_endFrame = channel._endFrame;
+
 	return *this;
 }
 
 
 Channel::~Channel() {
 	if (_widget) {
-		if (dynamic_cast<Graphics::MacWindow *>(_widget))
-			g_director->_wm->removeWindow((Graphics::MacWindow *)_widget);
-		else
-			delete _widget;
+		delete _widget;
 	}
 
 	if (_mask)
@@ -107,7 +114,8 @@ Channel::~Channel() {
 }
 
 DirectorPlotData Channel::getPlotData() {
-	DirectorPlotData pd(g_director, _sprite->_spriteType, _sprite->_ink, _sprite->_blendAmount, _sprite->getBackColor(), _sprite->getForeColor());
+	int blend = (_sprite->_thickness & kTHasBlend) || _sprite->_ink == kInkTypeBlend ? _sprite->_blendAmount : 0;
+	DirectorPlotData pd(g_director, _sprite->_spriteType, _sprite->_ink, blend, _sprite->getBackColor(), _sprite->getForeColor());
 	pd.colorWhite = g_director->getColorWhite();
 	pd.colorBlack = g_director->getColorBlack();
 	pd.dst = nullptr;
@@ -154,7 +162,7 @@ const Graphics::Surface *Channel::getMask(bool forceMatte) {
 		_sprite->_ink == kInkTypeLight ||
 		_sprite->_ink == kInkTypeSub ||
 		_sprite->_ink == kInkTypeDark ||
-		_sprite->_blendAmount > 0;
+		(((_sprite->_thickness & kTHasBlend) || _sprite->_ink == kInkTypeBlend) && _sprite->_blendAmount > 0);
 
 	Common::Rect bbox(getBbox());
 
@@ -253,7 +261,7 @@ bool Channel::isDirty(Sprite *nextSprite) {
 		// modified.
 		isDirtyFlag |= _sprite->_castId != nextSprite->_castId ||
 			_sprite->_ink != nextSprite->_ink || _sprite->_backColor != nextSprite->_backColor ||
-			_sprite->_foreColor != nextSprite->_foreColor || _sprite->_blend != nextSprite->_blend ||
+			_sprite->_foreColor != nextSprite->_foreColor ||
 			_sprite->_blendAmount != nextSprite->_blendAmount || _sprite->_thickness != nextSprite->_thickness;
 		if (!_sprite->_moveable)
 			isDirtyFlag |= _sprite->getPosition() != nextSprite->getPosition();
@@ -602,6 +610,11 @@ void Channel::replaceSprite(Sprite *nextSprite) {
 		_sprite->_width = width;
 		_sprite->_height = height;
 	}
+
+	if (g_director->getVersion() >= 600) {
+		_startFrame = _sprite->_spriteInfo.startFrame;
+		_endFrame = _sprite->_spriteInfo.endFrame;
+	}
 }
 
 void Channel::setPosition(int x, int y, bool force) {
@@ -647,11 +660,7 @@ void Channel::replaceWidget(CastMemberID previousCastId, bool force) {
 	}
 
 	if (_widget) {
-		// Check if _widget is of type window, in which case we need to remove it from the window manager
-		if (dynamic_cast<Graphics::MacWindow *>(_widget))
-			g_director->_wm->removeWindow((Graphics::MacWindow *)_widget);
-		else
-			delete _widget;
+		delete _widget;
 		_widget = nullptr;
 	}
 
@@ -660,6 +669,10 @@ void Channel::replaceWidget(CastMemberID previousCastId, bool force) {
 		// if the type don't match, then we will set it as transparent. i.e. don't create widget
 		if (!_sprite->checkSpriteType())
 			return;
+
+		if (_sprite->_cast->needsReload()) {
+			_sprite->_cast->load();
+		}
 		// always use the unstretched dims.
 		// because only the stretched sprite will have different channel size and sprite size
 		// we need the original image to scale the sprite.
@@ -745,10 +758,6 @@ int Channel::getMouseLine(int x, int y) {
 		warning("Channel::getMouseLine getting mouse line on a non-existing widget");
 		return -1;
 	}
-
-	// If widget is type textWindow, then we need to get the line from the window
-	if (dynamic_cast<Graphics::MacTextWindow *>(_widget))
-		return ((Graphics::MacTextWindow *)_widget)->getMouseLine(x, y);
 
 	return ((Graphics::MacText *)_widget)->getMouseLine(x, y);
 }

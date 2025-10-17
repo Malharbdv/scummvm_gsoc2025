@@ -30,11 +30,13 @@
 #include "engines/wintermute/base/base_parser.h"
 #include "engines/wintermute/base/base_dynamic_buffer.h"
 #include "engines/wintermute/base/base_engine.h"
+#include "engines/wintermute/base/base_game.h"
 #include "engines/wintermute/base/scriptables/script.h"
 #include "engines/wintermute/base/scriptables/script_stack.h"
 #include "engines/wintermute/base/scriptables/script_value.h"
 #include "engines/wintermute/base/base_file_manager.h"
 #include "engines/wintermute/platform_osystem.h"
+#include "engines/wintermute/dcgf.h"
 
 namespace Wintermute {
 
@@ -47,7 +49,7 @@ BaseRegion::BaseRegion(BaseGame *inGame) : BaseObject(inGame) {
 	_lastMimicScale = -1;
 	_lastMimicX = _lastMimicY = INT_MIN_VALUE;
 
-	_rect.setEmpty();
+	BasePlatform::setRectEmpty(&_rect);
 }
 
 
@@ -64,7 +66,7 @@ void BaseRegion::cleanup() {
 	}
 	_points.removeAll();
 
-	_rect.setEmpty();
+	BasePlatform::setRectEmpty(&_rect);
 	_editorSelectedPoint = -1;
 }
 
@@ -81,11 +83,11 @@ bool BaseRegion::pointInRegion(int x, int y) {
 		return false;
 	}
 
-	Point32 pt;
+	Common::Point32 pt;
 	pt.x = x;
 	pt.y = y;
 
-	Rect32 rect;
+	Common::Rect32 rect;
 	rect.left = x - 1;
 	rect.right = x + 2;
 	rect.top = y - 1;
@@ -101,9 +103,9 @@ bool BaseRegion::pointInRegion(int x, int y) {
 
 //////////////////////////////////////////////////////////////////////////
 bool BaseRegion::loadFile(const char *filename) {
-	char *buffer = (char *)BaseFileManager::getEngineInstance()->readWholeFile(filename);
+	char *buffer = (char *)_game->_fileManager->readWholeFile(filename);
 	if (buffer == nullptr) {
-		BaseEngine::LOG(0, "BaseRegion::LoadFile failed for file '%s'", filename);
+		_game->LOG(0, "BaseRegion::loadFile failed for file '%s'", filename);
 		return STATUS_FAILED;
 	}
 
@@ -112,7 +114,7 @@ bool BaseRegion::loadFile(const char *filename) {
 	setFilename(filename);
 
 	if (DID_FAIL(ret = loadBuffer(buffer, true))) {
-		BaseEngine::LOG(0, "Error parsing REGION file '%s'", filename);
+		_game->LOG(0, "Error parsing REGION file '%s'", filename);
 	}
 
 
@@ -149,11 +151,11 @@ bool BaseRegion::loadBuffer(char *buffer, bool complete) {
 
 	char *params;
 	int cmd;
-	BaseParser parser;
+	BaseParser parser(_game);
 
 	if (complete) {
 		if (parser.getCommand(&buffer, commands, &params) != TOKEN_REGION) {
-			BaseEngine::LOG(0, "'REGION' keyword expected.");
+			_game->LOG(0, "'REGION' keyword expected.");
 			return STATUS_FAILED;
 		}
 		buffer = params;
@@ -208,7 +210,7 @@ bool BaseRegion::loadBuffer(char *buffer, bool complete) {
 		}
 	}
 	if (cmd == PARSERR_TOKENNOTFOUND) {
-		BaseEngine::LOG(0, "Syntax error in REGION definition");
+		_game->LOG(0, "Syntax error in REGION definition");
 		return STATUS_FAILED;
 	}
 
@@ -290,9 +292,7 @@ bool BaseRegion::scCallMethod(ScScript *script, ScStack *stack, ScStack *thisSta
 		int index = stack->pop()->getInt();
 
 		if (index >= 0 && index < _points.getSize()) {
-			delete _points[index];
-			_points[index] = nullptr;
-
+			SAFE_DELETE(_points[index]);
 			_points.removeAt(index);
 			createRegion();
 
@@ -329,13 +329,13 @@ bool BaseRegion::scCallMethod(ScScript *script, ScStack *stack, ScStack *thisSta
 
 
 //////////////////////////////////////////////////////////////////////////
-ScValue *BaseRegion::scGetProperty(const Common::String &name) {
+ScValue *BaseRegion::scGetProperty(const char *name) {
 	_scValue->setNULL();
 
 	//////////////////////////////////////////////////////////////////////////
 	// Type
 	//////////////////////////////////////////////////////////////////////////
-	if (name == "Type") {
+	if (strcmp(name, "Type") == 0) {
 		_scValue->setString("region");
 		return _scValue;
 	}
@@ -343,7 +343,7 @@ ScValue *BaseRegion::scGetProperty(const Common::String &name) {
 	//////////////////////////////////////////////////////////////////////////
 	// Name
 	//////////////////////////////////////////////////////////////////////////
-	else if (name == "Name") {
+	else if (strcmp(name, "Name") == 0) {
 		_scValue->setString(_name);
 		return _scValue;
 	}
@@ -351,7 +351,7 @@ ScValue *BaseRegion::scGetProperty(const Common::String &name) {
 	//////////////////////////////////////////////////////////////////////////
 	// Active
 	//////////////////////////////////////////////////////////////////////////
-	else if (name == "Active") {
+	else if (strcmp(name, "Active") == 0) {
 		_scValue->setBool(_active);
 		return _scValue;
 	}
@@ -359,7 +359,7 @@ ScValue *BaseRegion::scGetProperty(const Common::String &name) {
 	//////////////////////////////////////////////////////////////////////////
 	// NumPoints
 	//////////////////////////////////////////////////////////////////////////
-	else if (name == "NumPoints") {
+	else if (strcmp(name, "NumPoints") == 0) {
 		_scValue->setInt(_points.getSize());
 		return _scValue;
 	} else {
@@ -439,6 +439,11 @@ bool BaseRegion::persist(BasePersistenceManager *persistMgr) {
 	persistMgr->transferSint32(TMEMBER(_lastMimicY));
 	_points.persist(persistMgr);
 
+	// initialise to default
+	if (!persistMgr->getIsSaving()) {
+		BasePlatform::setRectEmpty(&_rect);
+	}
+
 	return STATUS_OK;
 }
 
@@ -491,9 +496,9 @@ bool BaseRegion::ptInPolygon(int32 x, int32 y) {
 
 
 //////////////////////////////////////////////////////////////////////////
-bool BaseRegion::getBoundingRect(Rect32 *rect) {
+bool BaseRegion::getBoundingRect(Common::Rect32 *rect) {
 	if (_points.getSize() == 0) {
-		rect->setEmpty();
+		BasePlatform::setRectEmpty(rect);
 	} else {
 		int32 minX = INT_MAX_VALUE, minY = INT_MAX_VALUE, maxX = INT_MIN_VALUE, maxY = INT_MIN_VALUE;
 
@@ -504,7 +509,7 @@ bool BaseRegion::getBoundingRect(Rect32 *rect) {
 			maxX = MAX(maxX, _points[i]->x);
 			maxY = MAX(maxY, _points[i]->y);
 		}
-		rect->setRect(minX, minY, maxX, maxY);
+		BasePlatform::setRect(rect, minX, minY, maxX, maxY);
 	}
 	return STATUS_OK;
 }

@@ -44,6 +44,12 @@ static const PlainGameDescriptor wageGames[] = {
 #include "wage/detection_tables.h"
 #include "wage/detection.h"
 
+static const DebugChannelDef debugFlagList[] = {
+	{Wage::kDebugImGui, "imgui", "Show ImGui debug window (if available)"},
+	{Wage::kDebugSound, "sound", "Show sound debug information	"},
+	DEBUG_CHANNEL_END
+};
+
 static ADGameDescription s_fallbackDesc = {
 	"wage",
 	"",
@@ -60,7 +66,7 @@ class WageMetaEngineDetection : public AdvancedMetaEngineDetection<ADGameDescrip
 public:
 	WageMetaEngineDetection() : AdvancedMetaEngineDetection(Wage::gameDescriptions, wageGames) {
 		_md5Bytes = 2 * 1024 * 1024;
-		_guiOptions = GUIO3(GUIO_NOSPEECH, GUIO_NOMIDI, GAMEOPTION_TTS);
+		_guiOptions = GUIO4(GUIO_NOSPEECH, GUIO_NOMIDI, GAMEOPTION_TTS, GUIO_NOMUSIC);
 	}
 
 	const char *getName() const override {
@@ -73,6 +79,10 @@ public:
 
 	const char *getOriginalCopyright() const override {
 		return "World Builder (C) Silicon Beach Software";
+	}
+
+	const DebugChannelDef *getDebugChannels() const override {
+		return debugFlagList;
 	}
 
 	ADDetectedGame fallbackDetect(const FileMap &allFiles, const Common::FSList &fslist, ADDetectedGameExtraInfo **extra) const override;

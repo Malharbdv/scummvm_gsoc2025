@@ -37,6 +37,8 @@
 #include "engines/wintermute/base/scriptables/script.h"
 #include "engines/wintermute/base/scriptables/script_stack.h"
 #include "engines/wintermute/platform_osystem.h"
+#include "engines/wintermute/dcgf.h"
+
 #include "common/str.h"
 
 namespace Wintermute {
@@ -63,9 +65,9 @@ AdLayer::~AdLayer() {
 
 //////////////////////////////////////////////////////////////////////////
 bool AdLayer::loadFile(const char *filename) {
-	char *buffer = (char *)BaseFileManager::getEngineInstance()->readWholeFile(filename);
+	char *buffer = (char *)_game->_fileManager->readWholeFile(filename);
 	if (buffer == nullptr) {
-		_gameRef->LOG(0, "AdLayer::LoadFile failed for file '%s'", filename);
+		_game->LOG(0, "AdLayer::loadFile failed for file '%s'", filename);
 		return STATUS_FAILED;
 	}
 
@@ -74,7 +76,7 @@ bool AdLayer::loadFile(const char *filename) {
 	setFilename(filename);
 
 	if (DID_FAIL(ret = loadBuffer(buffer, true))) {
-		_gameRef->LOG(0, "Error parsing LAYER file '%s'", filename);
+		_game->LOG(0, "Error parsing LAYER file '%s'", filename);
 	}
 
 	delete[] buffer;
@@ -122,11 +124,11 @@ bool AdLayer::loadBuffer(char *buffer, bool complete) {
 
 	char *params;
 	int cmd;
-	BaseParser parser;
+	BaseParser parser(_game);
 
 	if (complete) {
 		if (parser.getCommand(&buffer, commands, &params) != TOKEN_LAYER) {
-			_gameRef->LOG(0, "'LAYER' keyword expected.");
+			_game->LOG(0, "'LAYER' keyword expected.");
 			return STATUS_FAILED;
 		}
 		buffer = params;
@@ -169,12 +171,12 @@ bool AdLayer::loadBuffer(char *buffer, bool complete) {
 			break;
 
 		case TOKEN_REGION: {
-			AdRegion *region = new AdRegion(_gameRef);
-			AdSceneNode *node = new AdSceneNode(_gameRef);
+			AdRegion *region = new AdRegion(_game);
+			AdSceneNode *node = new AdSceneNode(_game);
 			if (!region || !node || DID_FAIL(region->loadBuffer(params, false))) {
 				cmd = PARSERR_GENERIC;
-				delete region;
-				delete node;
+				SAFE_DELETE(region);
+				SAFE_DELETE(node);
 			} else {
 				node->setRegion(region);
 				_nodes.add(node);
@@ -183,15 +185,15 @@ bool AdLayer::loadBuffer(char *buffer, bool complete) {
 		break;
 
 		case TOKEN_ENTITY: {
-			AdEntity *entity = new AdEntity(_gameRef);
-			AdSceneNode *node = new AdSceneNode(_gameRef);
+			AdEntity *entity = new AdEntity(_game);
+			AdSceneNode *node = new AdSceneNode(_game);
 			if (entity) {
 				entity->_zoomable = false;    // scene entites default to NOT zoom
 			}
 			if (!entity || !node || DID_FAIL(entity->loadBuffer(params, false))) {
 				cmd = PARSERR_GENERIC;
-				delete entity;
-				delete node;
+				SAFE_DELETE(entity);
+				SAFE_DELETE(node);
 			} else {
 				node->setEntity(entity);
 				_nodes.add(node);
@@ -220,7 +222,7 @@ bool AdLayer::loadBuffer(char *buffer, bool complete) {
 		}
 	}
 	if (cmd == PARSERR_TOKENNOTFOUND) {
-		_gameRef->LOG(0, "Syntax error in LAYER definition");
+		_game->LOG(0, "Syntax error in LAYER definition");
 		return STATUS_FAILED;
 	}
 
@@ -276,16 +278,16 @@ bool AdLayer::scCallMethod(ScScript *script, ScStack *stack, ScStack *thisStack,
 		stack->correctParams(1);
 		ScValue *val = stack->pop();
 
-		AdSceneNode *node = new AdSceneNode(_gameRef);
+		AdSceneNode *node = new AdSceneNode(_game);
 		if (strcmp(name, "AddRegion") == 0) {
-			AdRegion *region = new AdRegion(_gameRef);
+			AdRegion *region = new AdRegion(_game);
 			if (!val->isNULL()) {
 				region->setName(val->getString());
 			}
 			node->setRegion(region);
 			stack->pushNative(region, true);
 		} else {
-			AdEntity *entity = new AdEntity(_gameRef);
+			AdEntity *entity = new AdEntity(_game);
 			if (!val->isNULL()) {
 				entity->setName(val->getString());
 			}
@@ -304,16 +306,16 @@ bool AdLayer::scCallMethod(ScScript *script, ScStack *stack, ScStack *thisStack,
 		int32 index = stack->pop()->getInt();
 		ScValue *val = stack->pop();
 
-		AdSceneNode *node = new AdSceneNode(_gameRef);
+		AdSceneNode *node = new AdSceneNode(_game);
 		if (strcmp(name, "InsertRegion") == 0) {
-			AdRegion *region = new AdRegion(_gameRef);
+			AdRegion *region = new AdRegion(_game);
 			if (!val->isNULL()) {
 				region->setName(val->getString());
 			}
 			node->setRegion(region);
 			stack->pushNative(region, true);
 		} else {
-			AdEntity *entity = new AdEntity(_gameRef);
+			AdEntity *entity = new AdEntity(_game);
 			if (!val->isNULL()) {
 				entity->setName(val->getString());
 			}
@@ -361,8 +363,7 @@ bool AdLayer::scCallMethod(ScScript *script, ScStack *stack, ScStack *thisStack,
 
 		for (int32 i = 0; i < _nodes.getSize(); i++) {
 			if (_nodes[i] == toDelete) {
-				delete _nodes[i];
-				_nodes[i] = nullptr;
+				SAFE_DELETE(_nodes[i]);
 				_nodes.removeAt(i);
 				break;
 			}
@@ -376,13 +377,13 @@ bool AdLayer::scCallMethod(ScScript *script, ScStack *stack, ScStack *thisStack,
 
 
 //////////////////////////////////////////////////////////////////////////
-ScValue *AdLayer::scGetProperty(const Common::String &name) {
+ScValue *AdLayer::scGetProperty(const char *name) {
 	_scValue->setNULL();
 
 	//////////////////////////////////////////////////////////////////////////
 	// Type
 	//////////////////////////////////////////////////////////////////////////
-	if (name == "Type") {
+	if (strcmp(name, "Type") == 0) {
 		_scValue->setString("layer");
 		return _scValue;
 	}
@@ -390,7 +391,7 @@ ScValue *AdLayer::scGetProperty(const Common::String &name) {
 	//////////////////////////////////////////////////////////////////////////
 	// NumNodes (RO)
 	//////////////////////////////////////////////////////////////////////////
-	else if (name == "NumNodes") {
+	else if (strcmp(name, "NumNodes") == 0) {
 		_scValue->setInt(_nodes.getSize());
 		return _scValue;
 	}
@@ -398,7 +399,7 @@ ScValue *AdLayer::scGetProperty(const Common::String &name) {
 	//////////////////////////////////////////////////////////////////////////
 	// Width
 	//////////////////////////////////////////////////////////////////////////
-	else if (name == "Width") {
+	else if (strcmp(name, "Width") == 0) {
 		_scValue->setInt(_width);
 		return _scValue;
 	}
@@ -406,7 +407,7 @@ ScValue *AdLayer::scGetProperty(const Common::String &name) {
 	//////////////////////////////////////////////////////////////////////////
 	// Height
 	//////////////////////////////////////////////////////////////////////////
-	else if (name == "Height") {
+	else if (strcmp(name, "Height") == 0) {
 		_scValue->setInt(_height);
 		return _scValue;
 	}
@@ -414,7 +415,7 @@ ScValue *AdLayer::scGetProperty(const Common::String &name) {
 	//////////////////////////////////////////////////////////////////////////
 	// Main (RO)
 	//////////////////////////////////////////////////////////////////////////
-	else if (name == "Main") {
+	else if (strcmp(name, "Main") == 0) {
 		_scValue->setBool(_main);
 		return _scValue;
 	}
@@ -422,7 +423,7 @@ ScValue *AdLayer::scGetProperty(const Common::String &name) {
 	//////////////////////////////////////////////////////////////////////////
 	// CloseUp
 	//////////////////////////////////////////////////////////////////////////
-	else if (name == "CloseUp") {
+	else if (strcmp(name, "CloseUp") == 0) {
 		_scValue->setBool(_closeUp);
 		return _scValue;
 	}
@@ -430,7 +431,7 @@ ScValue *AdLayer::scGetProperty(const Common::String &name) {
 	//////////////////////////////////////////////////////////////////////////
 	// Active
 	//////////////////////////////////////////////////////////////////////////
-	else if (name == "Active") {
+	else if (strcmp(name, "Active") == 0) {
 		_scValue->setBool(_active);
 		return _scValue;
 	} else {
@@ -465,7 +466,7 @@ bool AdLayer::scSetProperty(const char *name, ScValue *value) {
 		if (_width < 0) {
 			_width = 0;
 		}
-		((AdGame *)_gameRef)->_scene->onLayerResized(this);
+		((AdGame *)_game)->_scene->onLayerResized(this);
 		return STATUS_OK;
 	}
 
@@ -477,7 +478,7 @@ bool AdLayer::scSetProperty(const char *name, ScValue *value) {
 		if (_height < 0) {
 			_height = 0;
 		}
-		((AdGame *)_gameRef)->_scene->onLayerResized(this);
+		((AdGame *)_game)->_scene->onLayerResized(this);
 		return STATUS_OK;
 	}
 
@@ -487,7 +488,7 @@ bool AdLayer::scSetProperty(const char *name, ScValue *value) {
 	else if (strcmp(name, "Active") == 0) {
 		bool b = value->getBool();
 		if (b == false && _main) {
-			_gameRef->LOG(0, "Warning: cannot deactivate scene's main layer");
+			_game->LOG(0, "Warning: cannot deactivate scene's main layer");
 		} else {
 			_active = b;
 		}
@@ -535,7 +536,6 @@ bool AdLayer::saveAsText(BaseDynamicBuffer *buffer, int indent) {
 			_nodes[i]->_region->saveAsText(buffer, indent + 2);
 			break;
 		default:
-			error("AdLayer::SaveAsText - Unhandled enum");
 			break;
 		}
 	}

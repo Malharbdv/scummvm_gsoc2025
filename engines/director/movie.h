@@ -134,8 +134,9 @@ public:
 	ScriptContext *getScriptContext(ScriptType type, CastMemberID id);
 	Symbol getHandler(const Common::String &name, uint16 castLibHint = 0);
 
-	// events.cpp
+	// lingo/lingo-events.cpp
 	bool processEvent(Common::Event &event);
+	void broadcastEvent(LEvent event);
 
 	// lingo/lingo-events.cpp
 	void setPrimaryEventHandler(LEvent event, const Common::String &code);
@@ -154,8 +155,9 @@ public:
 	uint16 _version;
 	Common::Platform _platform;
 	Common::Rect _movieRect;
-	uint16 _currentActiveSpriteId;
-	uint16 _currentMouseSpriteId;
+	uint16 _lastClickedSpriteId;
+	uint16 _currentHoveredSpriteId;
+	uint _currentSpriteNum;
 	CastMemberID _currentMouseDownCastID;
 	CastMemberID _currentMouseDownSpriteScriptID;
 	bool _currentMouseDownSpriteImmediate;
@@ -193,6 +195,7 @@ public:
 	int _checkBoxAccess;
 
 	uint16 _currentHiliteChannelId;
+	uint16 _lastEnteredChannelId;
 
 	int _lastTimeOut;
 	int _timeOutLength;

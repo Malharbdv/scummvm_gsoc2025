@@ -37,7 +37,7 @@ namespace Wintermute {
 class BaseFrame;
 class BaseSurface;
 class BaseObject;
-class BaseSprite: public BaseScriptHolder {
+class BaseSprite : public BaseScriptHolder {
 public:
 	bool killAllSounds();
 	BaseSurface *getSurface();
@@ -53,7 +53,7 @@ public:
 	DECLARE_PERSISTENT(BaseSprite, BaseScriptHolder)
 
 	bool _editorAllFrames;
-	bool getBoundingRect(Rect32 *rect, int x, int y, float scaleX = Graphics::kDefaultZoomX, float scaleY = Graphics::kDefaultZoomY);
+	bool getBoundingRect(Common::Rect32 *rect, int x, int y, float scaleX = Graphics::kDefaultZoomX, float scaleY = Graphics::kDefaultZoomY);
 	int32 _moveY;
 	int32 _moveX;
 	bool display(int x, int y, BaseObject *registerOwner = nullptr, float zoomX = Graphics::kDefaultZoomX, float zoomY = Graphics::kDefaultZoomY, uint32 alpha = Graphics::kDefaultRgbaMod, float rotate = Graphics::kDefaultAngle, Graphics::TSpriteBlendMode blendMode = Graphics::BLEND_NORMAL);
@@ -63,30 +63,28 @@ public:
 	bool _continuous;
 	void reset();
 	BaseObject *_owner;
-	bool isChanged();
+	bool _changed;
 	bool _paused;
-	bool isFinished();
+	bool _finished;
 	bool loadBuffer(char *buffer, bool compete = true, int lifeTime = -1, TSpriteCacheType cacheType = CACHE_ALL);
-	bool loadFile(const Common::String &filename, int lifeTime = -1, TSpriteCacheType cacheType = CACHE_ALL);
+	bool loadFile(const char *filename, int lifeTime = -1, TSpriteCacheType cacheType = CACHE_ALL);
 	uint32 _lastFrameTime;
-	bool draw(int x, int y, BaseObject *Register = nullptr, float zoomX = Graphics::kDefaultZoomX, float zoomY = Graphics::kDefaultZoomY, uint32 alpha = Graphics::kDefaultRgbaMod);
+	bool draw(int x, int y, BaseObject *registerVal = nullptr, float zoomX = Graphics::kDefaultZoomX, float zoomY = Graphics::kDefaultZoomY, uint32 alpha = Graphics::kDefaultRgbaMod);
 	bool _looping;
 	int32 _currentFrame;
-	bool addFrame(const char *filename, uint32 delay = 0, int hotspotX = 0, int hotspotY = 0, Rect32 *rect = nullptr);
+	bool addFrame(const char *filename, uint32 delay = 0, int hotspotX = 0, int hotspotY = 0, Common::Rect32 *rect = nullptr);
 	BaseSprite(BaseGame *inGame, BaseObject *owner = nullptr);
 	~BaseSprite() override;
 	BaseArray<BaseFrame *> _frames;
 	bool saveAsText(BaseDynamicBuffer *buffer, int indent) override;
 
 	// scripting interface
-	ScValue *scGetProperty(const Common::String &name) override;
+	ScValue *scGetProperty(const char *name) override;
 	bool scSetProperty(const char *name, ScValue *value) override;
 	bool scCallMethod(ScScript *script, ScStack *stack, ScStack *thisStack, const char *name) override;
 	const char *scToString() override;
+
 	Common::String debuggerToString() const override;
-private:
-	bool _changed;
-	bool _finished;
 };
 
 } // End of namespace Wintermute

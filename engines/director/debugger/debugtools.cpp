@@ -66,6 +66,13 @@ const LingoDec::Handler *getHandler(const Cast *cast, CastMemberID id, const Com
 				return &handler;
 			}
 		}
+		for (const LingoDec::Script *factoryScript : p.second->factories) {
+			for (const LingoDec::Handler &handler : factoryScript->handlers) {
+				if (handler.name == handlerId) {
+					return &handler;
+				}
+			}
+		}
 	}
 	return nullptr;
 }
@@ -379,6 +386,7 @@ void setScriptToDisplay(const ImGuiScript &script) {
 	scriptData->_scripts.push_back(script);
 	scriptData->_current = index;
 	scriptData->_showScript = true;
+	_state->_dbg._scrollToPC = true;
 }
 
 void displayScriptRef(CastMemberID &scriptId) {
@@ -394,6 +402,71 @@ void displayScriptRef(CastMemberID &scriptId) {
 	}
 }
 
+ImColor brightenColor(const ImColor& color, float factor) {
+	ImVec4 col = color.Value;
+	col.x = CLIP<float>(col.x * factor, 0.0f, 1.0f);
+	col.y = CLIP<float>(col.y * factor, 0.0f, 1.0f);
+	col.z = CLIP<float>(col.z * factor, 0.0f, 1.0f);
+	return ImColor(col);
+}
+
+Window *windowListCombo(Common::String *target) {
+	const Common::Array<Window *> *windowList = g_director->getWindowList();
+	const Common::String selWin = *target;
+	Window *res = nullptr;
+
+	Common::String stage = g_director->getStage()->getCurrentMovie()->getMacName();
+
+	// Check if the relevant window is gone
+	bool found = false;
+	for (auto window : (*windowList)) {
+		if (window->getCurrentMovie()->getMacName() == selWin) {
+			// Found the selected window
+			found = true;
+			res = window;
+			break;
+		}
+	}
+
+	// Our default is Stage
+	if (selWin.empty() || windowList->empty() || !found) {
+		*target = stage;
+		res = g_director->getStage();
+	}
+
+	ImGui::Text("Window:");
+	ImGui::SameLine();
+
+	if (ImGui::BeginCombo("##window", selWin.c_str())) {
+		bool selected = (*target == stage);
+		if (ImGui::Selectable(stage.c_str(), selected))
+			*target = stage;
+
+		if (selected) {
+			ImGui::SetItemDefaultFocus();
+			res = g_director->getStage();
+		}
+
+		for (auto window : (*windowList)) {
+			Common::String winName = window->getCurrentMovie()->getMacName();
+			selected = (*target == winName);
+			if (ImGui::Selectable(winName.c_str(), selected)) {
+				*target = winName;
+				res = window;
+			}
+
+			if (selected) {
+				ImGui::SetItemDefaultFocus();
+				res = window;
+			}
+
+		}
+		ImGui::EndCombo();
+	}
+
+	return res;
+}
+
 static void showSettings() {
 	if (!_state->_w.settings)
 		return;
@@ -404,6 +477,8 @@ static void showSettings() {
 		ImGui::ColorEdit4("Breakpoint disabled", &_state->_colors._bp_color_disabled.x);
 		ImGui::ColorEdit4("Breakpoint enabled", &_state->_colors._bp_color_enabled.x);
 		ImGui::ColorEdit4("Breakpoint hover", &_state->_colors._bp_color_hover.x);
+
+		ImGui::ColorEdit4("Channel toggle", &_state->_colors._channel_toggle.x);
 
 		ImGui::SeparatorText("Lingo syntax");
 		ImGui::ColorEdit4("Line", &_state->_colors._line_color.x);
@@ -561,6 +636,17 @@ void onImGuiCleanup() {
 
 int getSelectedChannel(){
 	return _state ? _state->_selectedChannel : -1;
+}
+
+Common::String formatHandlerName(int scriptId, int castId, Common::String handlerName, ScriptType scriptType, bool childScript) {
+	Common::String formatted = Common::String();
+	// Naming convention: <script id> (<cast id/cast id of parent script>): name of handler: script type
+	if (childScript) {
+		formatted = Common::String::format("%d (p<%d>):%s :%s", scriptId, castId, handlerName.size() ? handlerName.c_str() : "<unnamed>", scriptType2str(scriptType));
+	} else {
+		formatted = Common::String::format("%d (%d) :%s :%s", scriptId, castId, handlerName.size() ? handlerName.c_str() : "<unnamed>", scriptType2str(scriptType));
+	}
+	return formatted;
 }
 
 } // namespace DT

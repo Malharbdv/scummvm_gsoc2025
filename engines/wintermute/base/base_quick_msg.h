@@ -32,12 +32,12 @@
 
 namespace Wintermute {
 
-class BaseQuickMsg {
+class BaseQuickMsg : public BaseClass {
 public:
-	const char *getText() const;
+	const char *getText();
 	uint32 _startTime;
-	Common::String _text;
-	BaseQuickMsg(uint32 startTime, const char *text);
+	char *_text;
+	BaseQuickMsg(BaseGame *inGame, const char *text);
 	virtual ~BaseQuickMsg();
 };
 

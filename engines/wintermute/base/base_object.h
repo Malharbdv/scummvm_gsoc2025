@@ -49,7 +49,7 @@ class XModel;
 class BaseObject : public BaseScriptHolder {
 public:
 	char *_accessCaption;
-	//virtual char *GetAccessCaption();
+	virtual const char *getAccessCaption();
 
 	Graphics::TSpriteBlendMode _blendMode;
 #ifdef ENABLE_WME3D
@@ -101,7 +101,6 @@ public:
 	bool _editorAlwaysRegister;
 	bool _editorOnly;
 	bool _is3D;
-
 	DECLARE_PERSISTENT(BaseObject, BaseScriptHolder)
 	virtual bool showCursor();
 	BaseSprite *_cursor;
@@ -113,9 +112,9 @@ public:
 	bool _registrable;
 	bool _zoomable;
 	bool _shadowable;
-	Rect32 _rect;
+	Common::Rect32 _rect;
 	bool _rectSet;
-	int32 _iD;
+	int32 _id;
 	bool _movable;
 	BaseObject(BaseGame *inGame);
 	~BaseObject() override;
@@ -126,16 +125,16 @@ public:
 	bool _saveState;
 
 	// base
-	virtual bool update()  {
+	virtual bool update() {
 		return STATUS_FAILED;
 	};
 	virtual bool display() {
 		return STATUS_FAILED;
 	};
-	virtual bool invalidateDeviceObjects()  {
+	virtual bool invalidateDeviceObjects() {
 		return STATUS_OK;
 	};
-	virtual bool restoreDeviceObjects()     {
+	virtual bool restoreDeviceObjects() {
 		return STATUS_OK;
 	};
 	bool _nonIntMouseEvents;
@@ -154,15 +153,14 @@ public:
 	DXVector3 _shadowLightPos;
 	bool _drawBackfaces;
 	TShadowType _shadowType;
-
-	virtual uint32 getAnimTransitionTime(char *from, char *to) {
+	virtual uint32 getAnimTransitionTime(const char *from, const char *to) {
 		return 0;
 	};
 #endif
 
 public:
 	// scripting interface
-	ScValue *scGetProperty(const Common::String &name) override;
+	ScValue *scGetProperty(const char *name) override;
 	bool scSetProperty(const char *name, ScValue *value) override;
 	bool scCallMethod(ScScript *script, ScStack *stack, ScStack *thisStack, const char *name) override;
 	const char *scToString() override;

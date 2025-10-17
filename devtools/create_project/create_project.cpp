@@ -1184,6 +1184,7 @@ const Feature s_features[] = {
 	{             "opengl",                    "USE_OPENGL", false, true,  "OpenGL support" },
 	{"opengl_game_classic",               "USE_OPENGL_GAME", false, true,  "OpenGL support (classic) in 3d games" },
 	{"opengl_game_shaders",            "USE_OPENGL_SHADERS", false, true,  "OpenGL support (shaders) in 3d games" },
+	{             "tinygl",                    "USE_TINYGL", false, true,  "TinyGL support (software) in 3d games" },
 	{            "taskbar",                   "USE_TASKBAR", false, true,  "Taskbar integration support" },
 	{               "http",                      "USE_HTTP", false, true,  "HTTP client support" },
 	{              "cloud",                     "USE_CLOUD", false, true,  "Cloud integration support" },
@@ -1988,7 +1989,6 @@ void ProjectProvider::createProject(BuildSetup &setup) {
 			in.push_back(setup.srcDir + "/LICENSES/COPYING.Apache");
 			in.push_back(setup.srcDir + "/LICENSES/COPYING.BSD");
 			in.push_back(setup.srcDir + "/LICENSES/COPYING.BSL");
-			in.push_back(setup.srcDir + "/LICENSES/COPYING.FREEFONT");
 			in.push_back(setup.srcDir + "/LICENSES/COPYING.GLAD");
 			in.push_back(setup.srcDir + "/LICENSES/COPYING.ISC");
 			in.push_back(setup.srcDir + "/LICENSES/COPYING.LGPL");

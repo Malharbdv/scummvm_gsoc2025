@@ -22,6 +22,8 @@
 #ifndef DIRECTOR_SPRITE_H
 #define DIRECTOR_SPRITE_H
 
+#include "director/spriteinfo.h"
+
 namespace Director {
 
 class Frame;
@@ -51,6 +53,16 @@ enum AutoPuppetProperty {
 	kAPMoveable,
 	kAPRect,
 	kAPWidth,
+	kAPThickness,
+};
+
+enum ThicknessFlags {
+	kTThickness = 0x0F,
+	kTHasBlend  = 0x10,
+	kTFlipH     = 0x20,
+	kTFlipV     = 0x40,
+	kTFlip      = (kTFlipH | kTFlipV),
+	kTTweened   = 0x80,
 };
 
 class Sprite {
@@ -58,6 +70,7 @@ public:
 	Sprite(Frame *frame = nullptr);
 	Sprite(const Sprite &sprite);
 	Sprite& operator=(const Sprite &sprite);
+	bool operator==(const Sprite &sprite);
 	~Sprite();
 
 	Frame *getFrame() const { return _frame; }
@@ -134,12 +147,11 @@ public:
 	uint32 _backColor;
 	uint32 _foreColor;
 
-	byte _blend;
-
 	byte _volume;
 	bool _stretch;
 
 	uint32 _spriteListIdx;	 // D6+
+	SpriteInfo _spriteInfo; // D6+
 
 	// D7+
 	byte _flags;
@@ -147,6 +159,8 @@ public:
 	byte _bgColorG, _bgColorB;		// R component sits in _backColor
 	int32 _angleRot;
 	int32 _angleSkew;
+
+	Common::Array<BehaviorElement> _behaviors; // D6+
 };
 
 } // End of namespace Director

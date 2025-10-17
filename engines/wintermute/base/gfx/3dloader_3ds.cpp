@@ -55,6 +55,7 @@ namespace Wintermute {
 
 //////////////////////////////////////////////////////////////////////////
 Loader3DS::Loader3DS(BaseGame *inGame) : BaseNamedObject(inGame) {
+	_filename = nullptr;
 }
 
 
@@ -63,6 +64,8 @@ Loader3DS::~Loader3DS() {
 	for (int32 i = 0; i < _objects.getSize(); i++)
 		delete _objects[i];
 	_objects.removeAll();
+
+	SAFE_DELETE_ARRAY(_filename);
 }
 
 
@@ -71,6 +74,7 @@ Loader3DS::~Loader3DS() {
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
 Loader3DS::FileObject3DS::FileObject3DS() {
+	_name = nullptr;
 	_type = OBJ_3DS_NONE;
 
 	_numVertices = 0;
@@ -84,10 +88,13 @@ Loader3DS::FileObject3DS::FileObject3DS() {
 	_lightColor = 0;
 	_lightHotspot = false;
 	_lightFalloff = false;
+	_lightTarget._x = _lightTarget._y = _lightTarget._z = 0.0f;
+	_lightPos._x = _lightPos._y = _lightPos._z = 0.0f;
 
 	_cameraBank = 0;
 	_cameraLens = 0;
 	_cameraFOV = 0;
+	_cameraPos._x = _cameraPos._y = _cameraPos._z = 0.0f;
 
 	_hidden = false;
 }
@@ -95,16 +102,21 @@ Loader3DS::FileObject3DS::FileObject3DS() {
 
 //////////////////////////////////////////////////////////////////////
 Loader3DS::FileObject3DS::~FileObject3DS() {
-	if (_vertices != NULL)
+	if (_name != nullptr)
+		delete[] _name;
+	if (_vertices != nullptr)
 		delete[] _vertices;
-	if (_faces != NULL)
+	if (_faces != nullptr)
 		delete[] _faces;
 }
 
 
 //////////////////////////////////////////////////////////////////////////
-bool Loader3DS::parseFile(const Common::String &filename) {
-	_filename = filename;
+bool Loader3DS::parseFile(const char *filename) {
+	SAFE_DELETE_ARRAY(_filename);
+	size_t filenameSize = strlen(filename) + 1;
+	_filename = new char[filenameSize];
+	Common::strcpy_s(_filename, filenameSize, filename);
 
 	uint32 fileSize;
 	byte *buffer = BaseFileManager::getEngineInstance()->readWholeFile(filename, &fileSize);
@@ -112,7 +124,7 @@ bool Loader3DS::parseFile(const Common::String &filename) {
 		return false;
 
 	uint16 keyframerSection = 0;
-	Common::String keyframerObject;
+	char *keyframerObject = nullptr;
 	FileObject3DS *obj = nullptr;
 	uint16 i;
 
@@ -135,9 +147,10 @@ bool Loader3DS::parseFile(const Common::String &filename) {
 			// object ////////////////////////////////////////////////////////////
 			case NAMED_OBJECT: {
 				obj = new FileObject3DS;
-				for (int8 current = fileStream.readByte(); current != 0; current = fileStream.readByte()) {
-					obj->_name.insertChar(current, obj->_name.size());
-				}
+				auto name = fileStream.readString();
+				size_t nameSize = name.size() + 1;
+				obj->_name = new char[nameSize];
+				Common::strcpy_s(obj->_name, nameSize, name.c_str());
 				_objects.add(obj);
 			}
 			break;
@@ -275,22 +288,24 @@ bool Loader3DS::parseFile(const Common::String &filename) {
 				keyframerSection = chunkId;
 			break;
 
-			case NODE_HDR:
+			case NODE_HDR: {
 				// object name
-				keyframerObject.clear();
-				for (int8 current = fileStream.readByte(); current != 0; current = fileStream.readByte()) {
-					keyframerObject.insertChar(current, keyframerObject.size());
-				}
+				SAFE_DELETE_ARRAY(keyframerObject);
+				auto keyname = fileStream.readString();
+				size_t keynameSize = keyname.size() + 1;
+				keyframerObject = new char[keynameSize];
+				Common::strcpy_s(keyframerObject, keynameSize, keyname.c_str());
 				// flags1
 				fileStream.readUint16LE();
 				// flags2
 				fileStream.readUint16LE();
 				// hierarchy
 				fileStream.readUint16LE();
+			}
 			break;
 
 			case ROLL_TRACK_TAG:
-				if (keyframerSection == KEYFRAMER_CAMERA_INFO && !keyframerObject.empty()) {
+				if (keyframerSection == KEYFRAMER_CAMERA_INFO && keyframerObject != nullptr) {
 					// flags
 					fileStream.readUint16LE();
 					// unknown
@@ -314,7 +329,7 @@ bool Loader3DS::parseFile(const Common::String &filename) {
 						// inject this roll value to the camera
 						if (key == 0) {
 							for (int32 index = 0; index < _objects.getSize(); index++) {
-								if (_objects[index]->_type == OBJ_3DS_CAMERA && _objects[index]->_name.compareToIgnoreCase(keyframerObject) == 0) {
+								if (_objects[index]->_type == OBJ_3DS_CAMERA && scumm_stricmp(_objects[index]->_name, keyframerObject) == 0) {
 									_objects[index]->_cameraBank = cameraRoll;
 									break;
 								}
@@ -332,6 +347,8 @@ bool Loader3DS::parseFile(const Common::String &filename) {
 		if (!handled)
 			fileStream.seek(chunkLength - 6, SEEK_CUR);
 	}
+
+	SAFE_DELETE_ARRAY(keyframerObject);
 
 	delete[] buffer;
 
@@ -353,7 +370,7 @@ int32 Loader3DS::getNumMeshes() {
 
 
 //////////////////////////////////////////////////////////////////////////
-Common::String Loader3DS::getMeshName(int index) {
+char *Loader3DS::getMeshName(int index) {
 	int32 pos = -1;
 
 	for (int32 i = 0; i < _objects.getSize(); i++) {
@@ -362,7 +379,7 @@ Common::String Loader3DS::getMeshName(int index) {
 		if (pos == index)
 			return _objects[i]->_name;
 	}
-	return Common::String();
+	return nullptr;
 }
 
 
@@ -398,7 +415,7 @@ bool Loader3DS::loadMesh(int index, Mesh3DS *mesh) {
 				mesh->_faces[j]._vertices[2] = obj->_faces[j]._c;
 			}
 
-			mesh->setName(obj->_name.c_str());
+			mesh->setName(obj->_name);
 
 			return true;
 		}
@@ -421,7 +438,7 @@ int32 Loader3DS::getNumLights() {
 
 
 //////////////////////////////////////////////////////////////////////////
-Common::String Loader3DS::getLightName(int index) {
+char *Loader3DS::getLightName(int index) {
 	int pos = -1;
 
 	for (int32 i = 0; i < _objects.getSize(); i++) {
@@ -430,7 +447,7 @@ Common::String Loader3DS::getLightName(int index) {
 		if (pos == index)
 			return _objects[i]->_name;
 	}
-	return NULL;
+	return nullptr;
 }
 
 
@@ -444,7 +461,7 @@ bool Loader3DS::loadLight(int index, Light3D *light) {
 		if (_objects[i]->_type == OBJ_3DS_LIGHT) {
 			pos++;
 			if (pos == index) {
-				light->setName(_objects[i]->_name.c_str());
+				light->setName(_objects[i]->_name);
 				light->_pos = _objects[i]->_lightPos;
 				light->_target = _objects[i]->_lightTarget;
 				light->_isSpotlight = _objects[i]->_lightSpotlight;
@@ -473,7 +490,7 @@ int32 Loader3DS::getNumCameras() {
 
 
 //////////////////////////////////////////////////////////////////////////
-Common::String Loader3DS::getCameraName(int index) {
+char *Loader3DS::getCameraName(int index) {
 	int32 pos = -1;
 	for (int32 i = 0; i < _objects.getSize(); i++) {
 		if (_objects[i]->_type == OBJ_3DS_CAMERA)
@@ -481,14 +498,14 @@ Common::String Loader3DS::getCameraName(int index) {
 		if (pos == index)
 			return _objects[i]->_name;
 	}
-	return Common::String();
+	return nullptr;
 }
 
 
 //////////////////////////////////////////////////////////////////////////
 bool Loader3DS::loadCamera(int index, Camera3D *camera) {
-	if (!camera) return
-		false;
+	if (!camera)
+		return false;
 
 	int pos = -1;
 	for (int32 i = 0; i < _objects.getSize(); i++) {
@@ -496,7 +513,7 @@ bool Loader3DS::loadCamera(int index, Camera3D *camera) {
 			pos++;
 		if (pos == index) {
 			camera->setupPos(_objects[i]->_cameraPos, _objects[i]->_cameraTarget, _objects[i]->_cameraBank);
-			camera->setName(_objects[i]->_name.c_str());
+			camera->setName(_objects[i]->_name);
 			camera->_fov = camera->_origFov = degToRad(_objects[i]->_cameraFOV);
 
 			return true;

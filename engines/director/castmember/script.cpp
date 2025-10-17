@@ -43,6 +43,9 @@ ScriptCastMember::ScriptCastMember(Cast *cast, uint16 castId, Common::SeekableRe
 		uint16 type = stream.readUint16BE();
 
 		switch (type) {
+		case 0:
+			_scriptType = kNoneScript;
+			break;
 		case 1:
 			_scriptType = kScoreScript;
 			break;
@@ -112,7 +115,7 @@ Datum ScriptCastMember::getField(int field) {
 	return d;
 }
 
-bool ScriptCastMember::setField(int field, const Datum &d) {
+void ScriptCastMember::setField(int field, const Datum &d) {
 	switch (field) {
 	case kTheScriptType:
 		warning("ScriptCastMember::setField(): setting scriptType! This probably isn't going to work as it doesn't recategorize the script.");
@@ -125,13 +128,12 @@ bool ScriptCastMember::setField(int field, const Datum &d) {
 				_scriptType = kParentScript;
 			}
 		}
-		return true;
-		break;
+		return;
 	default:
 		break;
 	}
 
-	return CastMember::setField(field, d);
+	CastMember::setField(field, d);
 }
 
 Common::String ScriptCastMember::formatInfo() {

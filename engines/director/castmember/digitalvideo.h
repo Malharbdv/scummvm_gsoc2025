@@ -38,6 +38,7 @@ enum DigitalVideoType {
 
 class DigitalVideoCastMember : public CastMember {
 public:
+	DigitalVideoCastMember(Cast *cast, uint16 castId);
 	DigitalVideoCastMember(Cast *cast, uint16 castId, Common::SeekableReadStreamEndian &stream, uint16 version);
 	DigitalVideoCastMember(Cast *cast, uint16 castId, DigitalVideoCastMember &source);
 	~DigitalVideoCastMember();
@@ -64,7 +65,7 @@ public:
 
 	bool hasField(int field) override;
 	Datum getField(int field) override;
-	bool setField(int field, const Datum &value) override;
+	void setField(int field, const Datum &value) override;
 
 	Common::String formatInfo() override;
 
@@ -91,6 +92,8 @@ public:
 	bool _emptyFile;
 	FrameRateType _frameRateType;
 	DigitalVideoType _videoType;
+
+	byte _ditheringPalette[256*3];
 
 	uint16 _frameRate;
 	bool _getFirstFrame;

@@ -280,7 +280,7 @@ _detection_features_full=yes
 # be modified otherwise. Consider them read-only.
 _3d=no
 _posix=no
-_has_posix_spawn=no
+_has_posix_spawn=auto
 _has_fseeko_offt_64=no
 _has_fseeko64=no
 _has_fopen64=no
@@ -2698,6 +2698,14 @@ set_flag_if_supported -Wno-pragma-pack
 
 set_flag_if_supported -Wno-address-of-packed-member
 
+# We still have (limited) support for MSVC 2015, but it's easy for it to
+# hit fatal C1004 errors, if some files are missing a final newline. Since
+# it's quite easy for this to happen, ask more modern compilers to help
+# our old friend.
+if test "$_release_build" != yes && test "$_werror_build" != no; then
+	set_flag_if_supported -Werror=newline-eof
+fi
+
 if test -n "$STRINGS"; then
 	_strings=$STRINGS
 else
@@ -2900,8 +2908,10 @@ case $_host_os in
 		append_var LDFLAGS "-march=armv6k -mtune=mpcore -mfloat-abi=hard -mtp=soft"
 		append_var LDFLAGS "-L$DEVKITPRO/libctru/lib"
 		append_var LDFLAGS "-L$DEVKITPRO/portlibs/3ds/lib"
+		# Add ctru in LDFLAGS for configure checks as it's needed by crt0
+		# We remove it at the end of configure
 		append_var LDFLAGS "-specs=3dsx.specs -lctru"
-		append_var LIBS "-lcitro3d"
+		append_var LIBS "-lcitro3d -lctru"
 		;;
 	amigaos*)
 		_port_mk="backends/platform/sdl/amigaos/amigaos.mk"
@@ -3002,20 +3012,14 @@ case $_host_os in
 		fi
 		;;
 	darwin*)
-		case $_host_cpu in
-		powerpc*)
-			if test "$_dynamic_modules" = no ; then
-				echo "WARNING: Building static engines will probably fail at link time on Mac PowerPC"
-			fi
-			;;
-		esac
-
 		append_var DEFINES "-DMACOSX"
 		append_var LIBS "-framework AudioUnit -framework AudioToolbox -framework Carbon -framework CoreMIDI"
 		# SDL2 doesn't seem to add Cocoa for us.
 		append_var LIBS "-framework Cocoa"
 		add_line_to_config_mk 'MACOSX = 1'
 		_seq_midi=no
+		# Custom openUrl() doesn't require it, and it's unavailable on 10.4 anyway
+		_has_posix_spawn=no
 
 		# Now we may have MacPorts or Fink installed
 		# Which put libraries and headers in non-standard places
@@ -3117,7 +3121,7 @@ case $_host_os in
 
 		echocheck "macOS deployment target"
 		cat > $TMPC << EOF
-#include "AvailabilityMacros.h"
+#include <AvailabilityMacros.h>
 
 #define _DIGIT(x) #x
 #define DIGIT(x) _DIGIT(x)
@@ -3151,24 +3155,24 @@ EOF
 
 		# Version-specific quirks
 		if test -n "$_macos_min_version" ; then
-			# When building for MacOS X 10.5 or below
 			if test "$_macos_min_version" -lt 1060 ; then
 				add_line_to_config_mk 'MACOSX_LEOPARD_OR_BELOW = 1'
 
-				# OSX 10.4/10.5 has no native C++11 support, thus we need to
-				# embed an updated libstdc++ in the bundle, and fix its
-				# dynamic references with install_name_tool(1), which requires
-				# linking with a bit of padding for the updated references.
+				# OSX 10.4/10.5 has no native C++11 support, so we need to
+				# embed an updated libstdc++ in the bundle. This means that
+				# its path must be fixed with install_name_tool(1), and this
+				# requires padding the length of all library paths first.
 				append_var LDFLAGS "-Wl,-headerpad_max_install_names"
 
 				if test "$_debug_build" != no ; then
-					# Prefer DWARF over stabs on older OSX; this requires a
-					# newer GDB, but we need it for the updated toolchain
-					# anyway. This improves the debugging experience quite
+					# Prefer DWARF-2 over stabs on older OSX; this requires a
+					# newer GDB, but the updated C++11 toolchain already imposes
+					# it anyway. This improves the debugging experience quite
 					# a lot, and it still creates meaningful traces for the
-					# Crash Reporter of OSX 10.4. -fvar-tracking-assignments
-					# should be disabled then, as it seems to cause issues
-					# and we can't use the later DWARF version it recommends.
+					# Crash Reporter of OSX 10.4.
+					#
+					# -fvar-tracking-assignments should also be disabled,
+					# as it does cause issues on (older) OSX with no DWARF-4.
 					append_var CXXFLAGS "-gdwarf-2 -fno-var-tracking-assignments"
 				fi
 			fi
@@ -3185,6 +3189,14 @@ EOF
 			# We use -force_cpusubtype_ALL to ensure the binary runs on every
 			# PowerPC machine.
 			append_var LDFLAGS "-force_cpusubtype_ALL"
+
+			# The PPC linker hits internal errors when the main binary gets too
+			# large (even when upgrading to the latest cctools release through
+			# MacPorts). So, unless one just builds a small subset of engines,
+			# dynamic modules must be used.
+			if test "$_dynamic_modules" = no ; then
+				echo "WARNING: Building static engines will probably fail at link time on Mac PowerPC"
+			fi
 			;;
 		aarch64)
 			add_line_to_config_mk 'MACOSX_ARM64 = 1'
@@ -3229,10 +3241,11 @@ EOF
 	ds)
 		_optimization_level=-Os
 		append_var DEFINES "-D__DS__"
-		append_var DEFINES "-DNDS"
+		append_var DEFINES "-D__NDS__"
 		append_var DEFINES "-DARM9"
 		append_var DEFINES "-DARM"
 		append_var DEFINES "-DNONSTANDARD_PORT"
+		append_var CXXFLAGS "-I $DEVKITPRO/calico/include"
 		append_var CXXFLAGS "-isystem $DEVKITPRO/libnds/include"
 		append_var CXXFLAGS "-isystem $DEVKITPRO/portlibs/nds/include"
 		append_var CXXFLAGS "-isystem $DEVKITPRO/portlibs/armv5te/include"
@@ -3252,14 +3265,16 @@ EOF
 		append_var LDFLAGS "-mthumb-interwork"
 		append_var LDFLAGS "-mfloat-abi=soft"
 		append_var LDFLAGS "-Wl,-Map,map.txt"
+		append_var LDFLAGS "-L$DEVKITPRO/calico/lib"
 		append_var LDFLAGS "-L$DEVKITPRO/libnds/lib"
 		append_var LDFLAGS "-L$DEVKITPRO/portlibs/nds/lib"
 		append_var LDFLAGS "-L$DEVKITPRO/portlibs/armv5te/lib"
-		append_var LIBS "-specs=ds_arm9.specs"
+		append_var LDFLAGS "-specs=$DEVKITPRO/calico/share/ds9.specs"
 		append_var LIBS "-lfilesystem"
 		append_var LIBS "-lfat"
 		append_var LIBS "-lmm9"
 		append_var LIBS "-lnds9"
+		append_var LIBS "-lcalico_ds9"
 		;;
 	emscripten)
 		append_var DEFINES "-DEMSCRIPTEN"
@@ -3280,7 +3295,7 @@ EOF
 
 		# enable SDL3 and set it up correctly
 		if test "$_dynamic_modules" = "yes" ; then
-			embuilder build sdl3 --pic 
+			embuilder build sdl3 --pic
 		else
 			embuilder build sdl3
 		fi
@@ -3294,6 +3309,8 @@ EOF
 		else
 			append_var SDL_LIBS "`$_sdlconfig --libs`"
 		fi
+
+		_has_posix_spawn=no
 
 		# We explicitly disable optional libraries if not enabled. "auto" would depend
 		# on whether the port has been used before (and is detected) which is unpredictable.
@@ -3802,6 +3819,7 @@ if test -n "$_host"; then
 				# --enable-release
 				append_var DEFINES  "-DNDEBUG"
 				append_var DEFINES  "-DDISABLE_TEXT_CONSOLE"
+				append_var DEFINES  "-DREDUCE_MEMORY_USAGE"
 			fi
 
 			append_var LDFLAGS "-Wl,--msuper-memory"
@@ -4098,7 +4116,6 @@ case $_backend in
 	3ds)
 		;;
 	android)
-		append_var DEFINES "-DREDUCE_MEMORY_USAGE"
 		append_var DEFINES "-DNONSTANDARD_PORT"
 		append_var DEFINES "-DANDROID_BACKEND"
 		append_var INCLUDES '-I$(srcdir)/backends/platform/'$_backend
@@ -4778,12 +4795,18 @@ if test "$_posix" = yes ; then
 	append_var DEFINES "-DPOSIX"
 	add_line_to_config_mk 'POSIX = 1'
 
-	echo_n "Checking if posix_spawn is supported... "
+	# So far, posix_spawn() is only used to provide openUrl() on POSIX
+	# systems. But some of them may already have their own openUrl()
+	# override, meaning that using posix_spawn() serves no purpose.
+	echo_n "Checking if posix_spawn is required and supported... "
+	if test "$_has_posix_spawn" != no ; then
 		cat > $TMPC << EOF
 #include <spawn.h>
 int main(void) { return posix_spawn(0, 0, 0, 0, 0, 0); }
 EOF
-	cc_check && test "$_host_os" != "emscripten" && _has_posix_spawn=yes
+		cc_check && _has_posix_spawn=yes
+	fi
+
 	echo $_has_posix_spawn
 	if test "$_has_posix_spawn" = yes ; then
 		append_var DEFINES "-DHAS_POSIX_SPAWN"
@@ -7492,6 +7515,9 @@ case $_host_os in
 		else
 			append_var LDFLAGS "-Wl,--no-gc-sections"
 		fi
+
+		# Remove ctru from LDFLAGS: it was added for configure checks
+		LDFLAGS=$(echo "$LDFLAGS" | sed -e 's/ -lctru//')
 		;;
 	amigaos*)
 		# In release mode use LTO to improve performance

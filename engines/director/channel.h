@@ -121,6 +121,10 @@ public:
 
 	Common::Rect _rollOverBbox;
 
+	int _startFrame;
+	int _endFrame;
+	Common::Array<Datum> _scriptInstanceList;
+
 private:
 	Graphics::ManagedSurface *getSurface();
 	Score *_score;

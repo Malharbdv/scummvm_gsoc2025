@@ -49,8 +49,8 @@ public:
 	bool parseEditorProperty(char *buffer, bool complete = true);
 	virtual bool saveAsText(BaseDynamicBuffer *buffer, int indent = 0);
 	BaseClass();
-	BaseGame *_gameRef;
-	BaseClass(BaseGame *GameOwner);
+	BaseGame *_game;
+	BaseClass(BaseGame *gameOwner);
 	virtual ~BaseClass();
 
 	virtual const char *getClassName() { return ""; }

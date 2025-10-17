@@ -32,10 +32,10 @@ void DarkEngine::initZX() {
 	_maxEnergy = 63;
 	_maxShield = 63;
 
-	_soundIndexShoot = 5;
+	_soundIndexShoot = 1;
 	_soundIndexCollide = -1; // Scripted
-	_soundIndexFall = 3;
-	_soundIndexClimb = 4;
+	_soundIndexStepDown = 3;
+	_soundIndexStepUp = 4;
 	_soundIndexMenu = 25;
 	_soundIndexStart = 11;
 	_soundIndexAreaChange = 0x1c;

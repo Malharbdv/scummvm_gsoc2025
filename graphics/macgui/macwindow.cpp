@@ -121,9 +121,18 @@ const Font *MacWindow::getTitleFont() {
 }
 
 void MacWindow::setActive(bool active) {
+	bool changed = (active != _active);
+
 	MacWidget::setActive(active);
 
 	_borderIsDirty = true;
+
+	if (changed) {
+		WindowClick click = active ? kBorderActivate : kBorderDeactivate;
+		Common::Event event;
+		if (_callback)
+			_callback(click, event, _dataPtr);
+	}
 }
 
 bool MacWindow::isActive() const { return _active; }
@@ -316,8 +325,13 @@ void MacWindow::drawBorder() {
 		return;
 	}
 
-	if (_highlightedPart == kBorderScrollUp || _highlightedPart == kBorderScrollDown)
+	if (_highlightedPart == kBorderScrollUp || _highlightedPart == kBorderScrollDown) {
+		_macBorder.drawScrollBar(g);
+
+		_highlightedPart = kBorderNone;
+
 		setHighlight(kBorderNone);
+	}
 }
 
 void MacWindow::drawBorderFromSurface(ManagedSurface *g, uint32 flags) {
@@ -522,6 +536,8 @@ WindowClick MacWindow::isInScroll(int x, int y) const {
 bool MacWindow::processEvent(Common::Event &event) {
 	WindowClick click = isInBorder(event.mouse.x, event.mouse.y);
 
+	bool result = false;
+
 	switch (event.type) {
 	case Common::EVENT_MOUSEMOVE:
 		if (_wm->_mouseDown && _wm->_hoveredWidget && !_wm->_hoveredWidget->_dims.contains(event.mouse.x - _dims.left, event.mouse.y - _dims.top)) {
@@ -589,6 +605,12 @@ bool MacWindow::processEvent(Common::Event &event) {
 
 		break;
 	case Common::EVENT_LBUTTONUP:
+		if (_beingDragged || _beingResized) {
+			WindowClick click1 = _beingDragged ? kBorderDragged : kBorderResized;
+			if (_callback)
+				_callback(click1, event, _dataPtr);
+		}
+
 		_beingDragged = false;
 		_beingResized = false;
 
@@ -596,21 +618,30 @@ bool MacWindow::processEvent(Common::Event &event) {
 		break;
 
 	case Common::EVENT_KEYDOWN:
+		if (_callback)
+			result = _callback(kBorderNone, event, _dataPtr);
+
 		if (!_editable && !(_wm->getActiveWidget() && _wm->getActiveWidget()->isEditable()))
-			return false;
+			return result;
 
 		if (_wm->getActiveWidget())
-			return _wm->getActiveWidget()->processEvent(event);
+			return _wm->getActiveWidget()->processEvent(event) || result;
 
-		return false;
+		return result;
 
 	case Common::EVENT_WHEELUP:
 	case Common::EVENT_WHEELDOWN:
+		if (_callback)
+			result = _callback(kBorderNone, event, _dataPtr);
+
 		if (_wm->getActiveWidget() && _wm->getActiveWidget()->processEvent(event))
 			return true;
-		return false;
+		return result;
 
 	default:
+		if (_callback)
+			return _callback(kBorderNone, event, _dataPtr);
+
 		return false;
 	}
 
@@ -622,13 +653,12 @@ bool MacWindow::processEvent(Common::Event &event) {
 		_wm->_hoveredWidget = w;
 
 		if (w->processEvent(event))
-			return true;
+			result = true;
 	}
 
 	if (_callback)
-		return (*_callback)(click, event, _dataPtr);
-	else
-		return false;
+		result = (*_callback)(click, event, _dataPtr) || result;
+	return result;
 }
 
 void MacWindow::setBorderType(int borderType) {
@@ -680,6 +710,17 @@ void MacWindow::mergeDirtyRects() {
 			}
 		}
 	}
+}
+
+Common::Rect MacWindow::getDirtyRectBounds() {
+	Common::Rect result;
+	if (_dirtyRects.size() == 0)
+		return result;
+	result = Common::Rect(_dirtyRects.front());
+	for (auto &r : _dirtyRects) {
+		result.extend(r);
+	}
+	return result;
 }
 
 } // End of namespace Graphics

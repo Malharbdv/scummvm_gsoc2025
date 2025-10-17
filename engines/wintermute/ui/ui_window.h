@@ -38,9 +38,9 @@ class UIButton;
 class BaseViewport;
 class UIWindow : public UIObject {
 public:
-	//CBObject *GetPrevAccessObject(CBObject *CurrObject);
-	//CBObject *GetNextAccessObject(CBObject *CurrObject);
-	bool getWindowObjects(BaseArray<UIObject *> &Objects, bool InteractiveOnly);
+	BaseObject *getPrevAccessObject(BaseObject *currObject);
+	BaseObject *getNextAccessObject(BaseObject *currObject);
+	bool getWindowObjects(BaseArray<UIObject *> &objects, bool interactiveOnly);
 
 	bool _pauseMusic;
 	void cleanup();
@@ -59,15 +59,15 @@ public:
 	bool goExclusive();
 	TWindowMode _mode;
 	bool moveFocus(bool forward = true);
-	bool handleMouse(TMouseEvent Event, TMouseButton Button) override;
-	Point32 _dragFrom;
+	bool handleMouse(TMouseEvent event, TMouseButton button) override;
+	Common::Point32 _dragFrom;
 	bool _dragging;
 	DECLARE_PERSISTENT(UIWindow, UIObject)
 	bool _transparent;
 	bool showWidget(const char *name, bool visible = true);
 	bool enableWidget(const char *name, bool enable = true);
-	Rect32 _titleRect;
-	Rect32 _dragRect;
+	Common::Rect32 _titleRect;
+	Common::Rect32 _dragRect;
 	bool display(int offsetX = 0, int offsetY = 0) override;
 	UIWindow(BaseGame *inGame);
 	~UIWindow() override;
@@ -83,7 +83,7 @@ public:
 	bool saveAsText(BaseDynamicBuffer *buffer, int indent) override;
 
 	// scripting interface
-	ScValue *scGetProperty(const Common::String &name) override;
+	ScValue *scGetProperty(const char *name) override;
 	bool scSetProperty(const char *name, ScValue *value) override;
 	bool scCallMethod(ScScript *script, ScStack *stack, ScStack *thisStack, const char *name) override;
 	const char *scToString() override;

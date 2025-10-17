@@ -41,8 +41,6 @@ public:
 	bool setPan(float pan);
 	int32 _soundPrivateVolume;
 	int getVolume();
-	int getVolumePercent();
-	bool setVolumePercent(int percent);
 	bool setVolume(int volume);
 	bool setPrivateVolume(int volume);
 	bool setLoopStart(uint32 pos);
@@ -63,10 +61,10 @@ public:
 	bool play(bool looping = false);
 	uint32 getLength();
 	bool _soundStreamed;
-	Audio::Mixer::SoundType _soundType;
-	Common::String _soundFilename;
+	TSoundType _soundType;
+	char *_soundFilename;
 	bool setSoundSimple();
-	bool setSound(const Common::String &filename, Audio::Mixer::SoundType type = Audio::Mixer::kSFXSoundType, bool streamed = false);
+	bool setSound(const char *filename, TSoundType type = TSoundType::SOUND_SFX, bool streamed = false, uint32 initialPrivateVolume = 100);
 	BaseSound(BaseGame *inGame);
 	~BaseSound() override;
 

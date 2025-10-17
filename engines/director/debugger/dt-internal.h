@@ -127,6 +127,7 @@ typedef struct ImGuiState {
 	struct {
 		bool _isScriptDirty = false; // indicates whether or not we have to display the script corresponding to the current stackframe
 		bool _goToDefinition = false;
+		bool _scrollToPC = false;
 		uint _lastLinePC = 0;
 		uint _callstackSize = 0;
 	} _dbg;
@@ -135,6 +136,8 @@ typedef struct ImGuiState {
 		ImVec4 _bp_color_disabled = ImVec4(0.9f, 0.08f, 0.0f, 0.0f);
 		ImVec4 _bp_color_enabled = ImVec4(0.9f, 0.08f, 0.0f, 1.0f);
 		ImVec4 _bp_color_hover = ImVec4(0.42f, 0.17f, 0.13f, 1.0f);
+
+		ImVec4 _channel_toggle = ImColor(IM_COL32(0x30, 0x30, 0xFF, 0xFF));
 
 		ImVec4 _current_statement = ImColor(IM_COL32(0xFF, 0xFF, 0x00, 0xFF));
 		ImVec4 _line_color = ImVec4(0.44f, 0.44f, 0.44f, 1.0f);
@@ -151,7 +154,23 @@ typedef struct ImGuiState {
 		ImVec4 _var_ref = ImColor(IM_COL32(0xe6, 0xe6, 0x00, 0xff));
 		ImVec4 _var_ref_changed = ImColor(IM_COL32(0xFF, 0x00, 0x00, 0xFF));
 		ImVec4 _var_ref_out_of_scope = ImColor(IM_COL32(0xFF, 0x00, 0xFF, 0xFF));
+
+		// Colors to show continuation data
+		// They come from the Authoring tool
+		ImColor _contColors[6] = {
+			ImColor(IM_COL32(0xce, 0xce, 0xff, 0x80)), // 0xceceff,
+			ImColor(IM_COL32(0xff, 0xff, 0xce, 0x80)), // 0xffffce,
+			ImColor(IM_COL32(0xce, 0xff, 0xce, 0x80)), // 0xceffce,
+			ImColor(IM_COL32(0xce, 0xff, 0xff, 0x80)), // 0xceffff,
+			ImColor(IM_COL32(0xff, 0xce, 0xff, 0x80)), // 0xffceff,
+			ImColor(IM_COL32(0xff, 0xce, 0x9c, 0x80)), // 0xffce9c,
+		};
+
+		ImColor _channel_selected_col = ImColor(IM_COL32(0x94, 0x00, 0xD3, 0xFF));
+		ImColor _channel_hovered_col = ImColor(IM_COL32(0xFF, 0xFF, 0, 0x3C));
+		int _contColorIndex = 0;
 	} _colors;
+
 
 	struct {
 		DatumHash _locals;
@@ -168,7 +187,7 @@ typedef struct ImGuiState {
 	bool _wasHidden = false;
 
 	Common::List<CastMemberID> _scriptCasts;
-	Common::List<ImGuiScript> _openHandlers;
+	Common::HashMap<int, ImGuiScript> _openHandlers;
 	bool _showCompleteScript = true;
 
 	Common::HashMap<Common::String, bool, Common::IgnoreCase_Hash, Common::IgnoreCase_EqualTo> _variables;
@@ -178,8 +197,20 @@ typedef struct ImGuiState {
 		int channel = -1;
 	} _selectedScoreCast;
 
+	struct {
+		int frame = -1;
+		int channel = -1;
+	} _hoveredScoreCast;
+
+	Common::Array<Common::Array<Common::Pair<uint, uint>>> _continuationData;
+	Common::String _loadedContinuationData;
+
+	Common::String _scoreWindow;
+	Common::String _channelsWindow;
+	Common::String _castWindow;
 	int _scoreMode = 0;
 	int _scoreFrameOffset = 1;
+	int _scorePageSlider = 0;
 
 	int _selectedChannel = -1;
 
@@ -213,6 +244,9 @@ Common::String getDisplayName(CastMember *castMember);
 void showImage(const ImGuiImage &image, const char *name, float thumbnailSize);
 ImVec4 convertColor(uint32 color);
 void displayVariable(const Common::String &name, bool changed, bool outOfScope = false);
+ImColor brightenColor(const ImColor &color, float factor);
+Window *windowListCombo(Common::String *target);
+Common::String formatHandlerName(int scriptId, int castId, Common::String handlerName, ScriptType scriptType, bool childScript);
 
 void showCast();        // dt-cast.cpp
 void showControlPanel(); // dt-controlpanel.cpp

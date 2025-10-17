@@ -28,6 +28,7 @@
 #include "director/sprite.h"
 #include "director/castmember/castmember.h"
 #include "director/castmember/shape.h"
+#include "director/castmember/text.h"
 
 namespace Director {
 
@@ -71,8 +72,6 @@ void Sprite::reset() {
 	_backColor = g_director->_wm->_colorWhite;
 	_foreColor = g_director->_wm->_colorWhite;
 
-	_blend = 0;
-
 	_volume = 0;
 	_stretch = false;
 
@@ -90,8 +89,6 @@ Sprite& Sprite::operator=(const Sprite &sprite) {
 	if (this == &sprite) {
 		return *this;
 	}
-
-	this->~Sprite();
 
 	_frame = sprite._frame;
 	_score = sprite._score;
@@ -112,6 +109,9 @@ Sprite& Sprite::operator=(const Sprite &sprite) {
 	_trails = sprite._trails;
 
 	_cast = sprite._cast;
+
+	if (_matte)
+		delete _matte;
 	_matte = nullptr;
 
 	_thickness = sprite._thickness;
@@ -126,11 +126,10 @@ Sprite& Sprite::operator=(const Sprite &sprite) {
 	_backColor = sprite._backColor;
 	_foreColor = sprite._foreColor;
 
-	_blend = sprite._blend;
-
 	_volume = sprite._volume;
 	_stretch = sprite._stretch;
 
+	_spriteInfo = sprite._spriteInfo;
 	_spriteListIdx = sprite._spriteListIdx;
 
 	_flags = sprite._flags;
@@ -141,7 +140,23 @@ Sprite& Sprite::operator=(const Sprite &sprite) {
 	_angleRot = sprite._angleRot;
 	_angleSkew = sprite._angleSkew;
 
+	_behaviors = sprite._behaviors;
+
 	return *this;
+}
+
+bool Sprite::operator==(const Sprite &sprite) {
+	return _spriteType == sprite._spriteType &&
+		_castId == sprite._castId &&
+		_startPoint == sprite._startPoint &&
+		_width == sprite._width &&
+		_height == sprite._height &&
+		_ink == sprite._ink &&
+		_foreColor == sprite._foreColor &&
+		_backColor == sprite._backColor &&
+		_blendAmount == sprite._blendAmount &&
+		_ink == sprite._ink &&
+		(_thickness | kTTweened) == (sprite._thickness | kTTweened);
 }
 
 Sprite::Sprite(const Sprite &sprite) {
@@ -239,7 +254,7 @@ MacShape *Sprite::getShape() {
 	shape->spriteType = _spriteType;
 	shape->foreColor = _foreColor;
 	shape->backColor = _backColor;
-	shape->lineSize = _thickness & 0x3;
+	shape->lineSize = _thickness & kTThickness;
 	shape->pattern = getPattern();
 	shape->tile = nullptr;
 	shape->tileRect = nullptr;
@@ -322,6 +337,12 @@ bool Sprite::respondsToMouse() {
 
 	if (_cast && _cast->_type == kCastButton)
 		return true;
+
+	// TODO: Check if we need to check against individual events like below
+	if (g_director->getVersion() >= 600) {
+		if (_behaviors.size() > 0)
+			return true;
+	}
 
 	ScriptContext *spriteScript = _movie->getScriptContext(kScoreScript, _scriptId);
 	if (spriteScript && (spriteScript->_eventHandlers.contains(kEventGeneric)
@@ -536,6 +557,24 @@ void Sprite::setCast(CastMemberID memberID, bool replaceDims) {
 			case kCastText:
 				_spriteType = kTextSprite;
 				break;
+			case kCastButton:
+				{
+					TextCastMember *text = (TextCastMember *)_cast;
+					switch (text->_buttonType) {
+					case kTypeButton:
+						_spriteType = kButtonSprite;
+						break;
+					case kTypeCheckBox:
+						_spriteType = kCheckboxSprite;
+						break;
+					case kTypeRadio:
+						_spriteType = kRadioButtonSprite;
+						break;
+					default:
+						break;
+					}
+					break;
+				}
 			default:
 				break;
 			}

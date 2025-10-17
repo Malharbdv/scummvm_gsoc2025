@@ -556,6 +556,7 @@ Common::KeyState ScummEngine::showOldStyleBannerAndPause(const char *msg, int co
 			_virtscr[kBannerVirtScreen].setDirtyRange(0, _virtscr[kBannerVirtScreen].h);
 			updateDirtyScreen(kBannerVirtScreen);
 			_virtscr[kMainVirtScreen].setDirtyRange(startingPointY - _virtscr[kMainVirtScreen].topline, startingPointY - _virtscr[kMainVirtScreen].topline + _virtscr[kBannerVirtScreen].h);
+			updateDirtyScreen(kMainVirtScreen);
 		}
 	}
 
@@ -2207,6 +2208,10 @@ void ScummEngine::queryRestart() {
 			case GID_LOOM:
 				fadeOutType = _game.version == 4 ? 134 : -1;
 				break;
+			case GID_MONKEY_EGA:
+			case GID_MONKEY_VGA:
+				fadeOutType = 128;
+				break;
 			case GID_MONKEY:
 			case GID_MONKEY2:
 			case GID_INDY4:
@@ -2217,9 +2222,6 @@ void ScummEngine::queryRestart() {
 			case GID_FT:
 			case GID_DIG:
 				fadeOutType = -1;
-				break;
-			case GID_MONKEY_EGA:
-				fadeOutType = 128;
 				break;
 			default:
 				fadeOutType = 129;

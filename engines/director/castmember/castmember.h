@@ -64,6 +64,7 @@ public:
 	virtual bool isEditable() { return false; }
 	virtual void setEditable(bool editable) {}
 	virtual bool isModified() { return _modified; }
+	virtual bool needsReload() { return _needsReload; }
 	void setModified(bool modified);
 	virtual Graphics::MacWidget *createWidget(Common::Rect &bbox, Channel *channel, SpriteType spriteType) { return nullptr; }
 	virtual void updateWidget(Graphics::MacWidget *widget, Channel *channel) {}
@@ -78,10 +79,10 @@ public:
 
 	bool hasProp(const Common::String &propName) override;
 	Datum getProp(const Common::String &propName) override;
-	bool setProp(const Common::String &propName, const Datum &value, bool force = false) override;
+	void setProp(const Common::String &propName, const Datum &value, bool force = false) override;
 	bool hasField(int field) override;
 	Datum getField(int field) override;
-	bool setField(int field, const Datum &value) override;
+	void setField(int field, const Datum &value) override;
 
 	// release the control to widget, this happens when we are changing sprites. Because we are having the new cast member and the old one shall leave
 	void releaseWidget() { _widget = nullptr; }
@@ -154,8 +155,8 @@ struct EditInfo {
 	void write(Common::WriteStream *stream);
 
 	Common::String toString() {
-		return Common::String::format("rect: [%d,%d,%d,%d] selStart: %d selEnd: %d version: %d rulerFlag: %d valid: %d",
-			rect.left, rect.top, rect.right, rect.bottom, selStart, selEnd, version, rulerFlag, valid);
+		return Common::String::format("rect: [%s] selStart: %d selEnd: %d version: %d rulerFlag: %d valid: %d",
+			rect.toString().c_str(), selStart, selEnd, version, rulerFlag, valid);
 	}
 };
 
@@ -182,7 +183,7 @@ struct CastMemberInfo {
 	byte xtraGuid[16];			// 9
 	Common::String xtraDisplayName;
 	Common::Array<byte> bpTable; //       (removed on protecting)
-	Common::Array<byte> xtraRect;		// Rect32
+	Common::Rect32 xtraRect;		// Rect32
 	Common::Rect scriptRect;	//        (removed on protecting)
 	Common::Array<byte> dvWindowInfo; //  (removed on protecting)
 	byte guid[16];				// 15   Seems to be a GUID

@@ -976,4 +976,126 @@ Audio::AudioStream *AudioFileDecoder::getAudioStream(bool looping, bool forPuppe
 	return nullptr;
 }
 
+MoaStreamDecoder::MoaStreamDecoder(Common::String &format, Common::SeekableReadStreamEndian *stream)
+		: AudioDecoder() {
+	_format = format;
+	_stream = stream;
+}
+
+MoaStreamDecoder::~MoaStreamDecoder() {
+	if (_stream) {
+		delete _stream;
+		_stream = nullptr;
+	}
+}
+
+Audio::AudioStream *MoaStreamDecoder::getAudioStream(bool looping, bool forPuppet, DisposeAfterUse::Flag disposeAfterUse) {
+	if (!_stream)
+		return nullptr;
+
+	// Make sure we're at the start of the stream
+	_stream->seek(0, SEEK_SET);
+
+	Audio::RewindableAudioStream *stream = nullptr;
+	if (_format.equalsIgnoreCase("kMoaCfFormat_AIFF")) {
+		stream = Audio::makeAIFFStream(_stream, DisposeAfterUse::NO);
+	} else {
+		warning("Unsupported Moa stream type '%s'", _format.c_str());
+		delete _stream;
+	}
+
+	if (stream) {
+		if (looping) {
+			return new Audio::LoopingAudioStream(stream, 0);
+		}
+		return stream;
+	}
+
+	return nullptr;
+}
+
+MoaSoundFormatDecoder::MoaSoundFormatDecoder() {
+}
+
+MoaSoundFormatDecoder::~MoaSoundFormatDecoder() {
+	if (_data) {
+		free(_data);
+		_data = nullptr;
+	}
+}
+
+bool MoaSoundFormatDecoder::loadHeaderStream(Common::SeekableReadStreamEndian &stream) {
+	_format.offset = stream.readSint32BE();
+	_format.size = stream.readSint32BE();
+	_format.playbackStart = stream.readSint32BE();
+	_format.playbackStartFrame = stream.readSint32BE();
+	_format.loopStart = stream.readSint32BE();
+	_format.loopStartFrame = stream.readSint32BE();
+	_format.loopEnd = stream.readSint32BE();
+	_format.loopEndFrame = stream.readSint32BE();
+	_format.playbackEnd = stream.readSint32BE();
+	_format.playbackEndFrame = stream.readSint32BE();
+	_format.numFrames = stream.readSint32BE();
+	_format.frameRate = stream.readSint32BE();
+	_format.byteRate = stream.readSint32BE();
+	stream.read(_format.compressionType, 16);
+	_format.bitsPerSample = stream.readSint32BE();
+	_format.bytesPerSample = stream.readSint32BE();
+	_format.numChannels = stream.readSint32BE();
+	_format.bytesPerFrame = stream.readSint32BE();
+	stream.read(_format.soundHeaderType, 16);
+	for (int i = 0; i < 63; i++) {
+		_format.platformData[i] = stream.readUint32BE();
+	}
+	_format.bytesPerBlock = stream.readSint32BE();
+
+	if (debugChannelSet(5, kDebugLoading)) {
+		debugC(5, kDebugLoading, "MoaSoundFormatDecoder: Loading header");
+		debugC(5, kDebugLoading, "offset: %d, size: %d, playbackStart: %d, playbackStartFrame: %d",
+		_format.offset, _format.size, _format.playbackStart, _format.playbackStartFrame);
+		debugC(5, kDebugLoading, "loopStart: %d, loopStartEndFrame: %d, loopEnd: %d, loopEndFrame: %d",
+		_format.loopStart, _format.loopStartFrame, _format.loopEnd, _format.loopEndFrame);
+		debugC(5, kDebugLoading, "playbackEnd: %d, playbackEndFrame: %d, numFrames: %d, frameRate: %d, byteRate: %d",
+		_format.playbackEnd, _format.playbackEndFrame, _format.numFrames, _format.frameRate, _format.byteRate);
+		debugC(5, kDebugLoading, "bitsPerSample: %d, bytesPerSample: %d, numChannels: %d, bytesPerFrame: %d, bytesPerBlock: %d",
+		_format.bitsPerSample, _format.bytesPerSample, _format.numChannels, _format.bytesPerFrame, _format.bytesPerBlock);
+
+	}
+	return false;
+}
+
+bool MoaSoundFormatDecoder::loadSampleStream(Common::SeekableReadStreamEndian &stream) {
+	_size = stream.size();
+	if (_data) {
+		free(_data);
+		_data = nullptr;
+	}
+	_data = (byte *)malloc(_size);
+	stream.read(_data, _size);
+	return false;
+}
+
+Audio::AudioStream *MoaSoundFormatDecoder::getAudioStream(bool looping, bool forPuppet, DisposeAfterUse::Flag disposeAfterUse) {
+	if (!_data)
+		return nullptr;
+	byte *buffer = (byte *)malloc(_size);
+	memcpy(buffer, _data, _size);
+
+	Audio::SeekableAudioStream *stream = Audio::makeRawStream(buffer,
+			_size, _format.frameRate,
+			((_format.bitsPerSample == 16) ? Audio::RawFlags::FLAG_16BITS : 0) |
+			((_format.numChannels == 2) ? Audio::RawFlags::FLAG_STEREO : 0) |
+			((_format.bitsPerSample == 8) ? Audio::RawFlags::FLAG_UNSIGNED : 0),
+			disposeAfterUse);
+
+	if (looping) {
+		if (_format.loopEndFrame <= _format.loopStartFrame) {
+			return new Audio::LoopingAudioStream(stream, 0);
+		} else {
+			return new Audio::SubLoopingAudioStream(stream, 0, Audio::Timestamp(0, _format.loopStartFrame, _format.frameRate), Audio::Timestamp(0, _format.loopEndFrame, _format.frameRate));
+		}
+	}
+	return stream;
+}
+
 } // End of namespace Director

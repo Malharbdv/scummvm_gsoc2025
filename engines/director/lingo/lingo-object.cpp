@@ -30,122 +30,126 @@
 #include "director/lingo/lingo-code.h"
 #include "director/lingo/lingo-the.h"
 
-#include "director/lingo/xlibs/aiff.h"
-#include "director/lingo/xlibs/applecdxobj.h"
-#include "director/lingo/xlibs/askuser.h"
-#include "director/lingo/xlibs/backdrop.h"
-#include "director/lingo/xlibs/barakeobj.h"
-#include "director/lingo/xlibs/batqt.h"
-#include "director/lingo/xlibs/bimxobj.h"
-#include "director/lingo/xlibs/blitpict.h"
-#include "director/lingo/xlibs/cdromxobj.h"
-#include "director/lingo/xlibs/closebleedwindowxcmd.h"
-#include "director/lingo/xlibs/colorxobj.h"
-#include "director/lingo/xlibs/colorcursorxobj.h"
-#include "director/lingo/xlibs/consumer.h"
-#include "director/lingo/xlibs/cursorxobj.h"
-#include "director/lingo/xlibs/darkenscreen.h"
-#include "director/lingo/xlibs/dateutil.h"
-#include "director/lingo/xlibs/developerStack.h"
-#include "director/lingo/xlibs/dialogsxobj.h"
-#include "director/lingo/xlibs/dirutil.h"
-#include "director/lingo/xlibs/dllglue.h"
-#include "director/lingo/xlibs/dpwavi.h"
-#include "director/lingo/xlibs/dpwqtw.h"
-#include "director/lingo/xlibs/draw.h"
-#include "director/lingo/xlibs/ednox.h"
-#include "director/lingo/xlibs/eventq.h"
-#include "director/lingo/xlibs/fadegammadownxcmd.h"
-#include "director/lingo/xlibs/fadegammaupxcmd.h"
-#include "director/lingo/xlibs/fadegammaxcmd.h"
-#include "director/lingo/xlibs/fedracul.h"
-#include "director/lingo/xlibs/feimasks.h"
-#include "director/lingo/xlibs/feiprefs.h"
-#include "director/lingo/xlibs/fileexists.h"
-#include "director/lingo/xlibs/fileio.h"
-#include "director/lingo/xlibs/findereventsxcmd.h"
-#include "director/lingo/xlibs/findfolder.h"
-#include "director/lingo/xlibs/findsys.h"
-#include "director/lingo/xlibs/findwin.h"
-#include "director/lingo/xlibs/flushxobj.h"
-#include "director/lingo/xlibs/fplayxobj.h"
-#include "director/lingo/xlibs/fsutil.h"
-#include "director/lingo/xlibs/genutils.h"
-#include "director/lingo/xlibs/getscreenrectsxfcn.h"
-#include "director/lingo/xlibs/getscreensizexfcn.h"
-#include "director/lingo/xlibs/getsoundinlevel.h"
-#include "director/lingo/xlibs/gpid.h"
-#include "director/lingo/xlibs/henry.h"
-#include "director/lingo/xlibs/hitmap.h"
-#include "director/lingo/xlibs/inixobj.h"
-#include "director/lingo/xlibs/instobj.h"
-#include "director/lingo/xlibs/jwxini.h"
-#include "director/lingo/xlibs/iscd.h"
-#include "director/lingo/xlibs/ispippin.h"
-#include "director/lingo/xlibs/jitdraw3.h"
-#include "director/lingo/xlibs/labeldrvxobj.h"
-#include "director/lingo/xlibs/listdev.h"
-#include "director/lingo/xlibs/maniacbg.h"
-#include "director/lingo/xlibs/mapnavigatorxobj.h"
-#include "director/lingo/xlibs/memcheckxobj.h"
-#include "director/lingo/xlibs/memoryxobj.h"
-#include "director/lingo/xlibs/misc.h"
-#include "director/lingo/xlibs/miscx.h"
-#include "director/lingo/xlibs/mmaskxobj.h"
-#include "director/lingo/xlibs/mmovie.h"
-#include "director/lingo/xlibs/moovxobj.h"
-#include "director/lingo/xlibs/movemousejp.h"
-#include "director/lingo/xlibs/movemousexobj.h"
-#include "director/lingo/xlibs/movieidxxobj.h"
-#include "director/lingo/xlibs/movutils.h"
-#include "director/lingo/xlibs/mystisle.h"
-#include "director/lingo/xlibs/openbleedwindowxcmd.h"
-#include "director/lingo/xlibs/orthoplayxobj.h"
-#include "director/lingo/xlibs/paco.h"
-#include "director/lingo/xlibs/palxobj.h"
-#include "director/lingo/xlibs/panel.h"
-#include "director/lingo/xlibs/pharaohs.h"
-#include "director/lingo/xlibs/popupmenuxobj.h"
-#include "director/lingo/xlibs/porta.h"
-#include "director/lingo/xlibs/prefpath.h"
-#include "director/lingo/xlibs/printomatic.h"
-#include "director/lingo/xlibs/processxobj.h"
-#include "director/lingo/xlibs/qtmovie.h"
-#include "director/lingo/xlibs/qtcatmovieplayerxobj.h"
-#include "director/lingo/xlibs/qtvr.h"
-#include "director/lingo/xlibs/quicktime.h"
-#include "director/lingo/xlibs/registercomponent.h"
-#include "director/lingo/xlibs/remixxcmd.h"
-#include "director/lingo/xlibs/serialportxobj.h"
-#include "director/lingo/xlibs/smallutil.h"
-#include "director/lingo/xlibs/soundjam.h"
-#include "director/lingo/xlibs/spacemgr.h"
-#include "director/lingo/xlibs/stagetc.h"
-#include "director/lingo/xlibs/syscolor.h"
-#include "director/lingo/xlibs/tengu.h"
-#include "director/lingo/xlibs/unittest.h"
-#include "director/lingo/xlibs/valkyrie.h"
-#include "director/lingo/xlibs/videodiscxobj.h"
-#include "director/lingo/xlibs/vmisonxfcn.h"
-#include "director/lingo/xlibs/vmpresent.h"
-#include "director/lingo/xlibs/volumelist.h"
-#include "director/lingo/xlibs/voyagerxsound.h"
-#include "director/lingo/xlibs/widgetxobj.h"
-#include "director/lingo/xlibs/window.h"
-#include "director/lingo/xlibs/wininfo.h"
-#include "director/lingo/xlibs/winxobj.h"
-#include "director/lingo/xlibs/xcmdglue.h"
-#include "director/lingo/xlibs/xio.h"
-#include "director/lingo/xlibs/xplayanim.h"
-#include "director/lingo/xlibs/xplaypacoxfcn.h"
-#include "director/lingo/xlibs/xsoundxfcn.h"
-#include "director/lingo/xlibs/xwin.h"
-#include "director/lingo/xlibs/yasix.h"
+#include "director/lingo/xlibs/a/aiff.h"
+#include "director/lingo/xlibs/a/applecdxobj.h"
+#include "director/lingo/xlibs/a/askuser.h"
+#include "director/lingo/xlibs/b/backdrop.h"
+#include "director/lingo/xlibs/b/barakeobj.h"
+#include "director/lingo/xlibs/b/batqt.h"
+#include "director/lingo/xlibs/b/bimxobj.h"
+#include "director/lingo/xlibs/b/blitpict.h"
+#include "director/lingo/xlibs/c/cdromxobj.h"
+#include "director/lingo/xlibs/c/closebleedwindowxcmd.h"
+#include "director/lingo/xlibs/c/colorxobj.h"
+#include "director/lingo/xlibs/c/colorcursorxobj.h"
+#include "director/lingo/xlibs/c/consumer.h"
+#include "director/lingo/xlibs/c/cursorxobj.h"
+#include "director/lingo/xlibs/d/darkenscreen.h"
+#include "director/lingo/xlibs/d/dateutil.h"
+#include "director/lingo/xlibs/d/developerStack.h"
+#include "director/lingo/xlibs/d/dialogsxobj.h"
+#include "director/lingo/xlibs/d/dirutil.h"
+#include "director/lingo/xlibs/d/dllglue.h"
+#include "director/lingo/xlibs/d/dpwavi.h"
+#include "director/lingo/xlibs/d/dpwqtw.h"
+#include "director/lingo/xlibs/d/draw.h"
+#include "director/lingo/xlibs/e/ednox.h"
+#include "director/lingo/xlibs/e/eventq.h"
+#include "director/lingo/xlibs/f/fadegammadownxcmd.h"
+#include "director/lingo/xlibs/f/fadegammaupxcmd.h"
+#include "director/lingo/xlibs/f/fadegammaxcmd.h"
+#include "director/lingo/xlibs/f/fedracul.h"
+#include "director/lingo/xlibs/f/feimasks.h"
+#include "director/lingo/xlibs/f/feiprefs.h"
+#include "director/lingo/xlibs/f/fileexists.h"
+#include "director/lingo/xlibs/f/fileio.h"
+#include "director/lingo/xlibs/f/findereventsxcmd.h"
+#include "director/lingo/xlibs/f/findfolder.h"
+#include "director/lingo/xlibs/f/findsys.h"
+#include "director/lingo/xlibs/f/findwin.h"
+#include "director/lingo/xlibs/f/flushxobj.h"
+#include "director/lingo/xlibs/f/fplayxobj.h"
+#include "director/lingo/xlibs/f/fsutil.h"
+#include "director/lingo/xlibs/g/genutils.h"
+#include "director/lingo/xlibs/g/getscreenrectsxfcn.h"
+#include "director/lingo/xlibs/g/getscreensizexfcn.h"
+#include "director/lingo/xlibs/g/getsoundinlevel.h"
+#include "director/lingo/xlibs/g/gpid.h"
+#include "director/lingo/xlibs/h/henry.h"
+#include "director/lingo/xlibs/h/hitmap.h"
+#include "director/lingo/xlibs/i/inixobj.h"
+#include "director/lingo/xlibs/i/instobj.h"
+#include "director/lingo/xlibs/j/jwxini.h"
+#include "director/lingo/xlibs/i/iscd.h"
+#include "director/lingo/xlibs/i/ispippin.h"
+#include "director/lingo/xlibs/j/jitdraw3.h"
+#include "director/lingo/xlibs/l/labeldrvxobj.h"
+#include "director/lingo/xlibs/l/listdev.h"
+#include "director/lingo/xlibs/m/maniacbg.h"
+#include "director/lingo/xlibs/m/mapnavigatorxobj.h"
+#include "director/lingo/xlibs/m/memcheckxobj.h"
+#include "director/lingo/xlibs/m/memoryxobj.h"
+#include "director/lingo/xlibs/m/misc.h"
+#include "director/lingo/xlibs/m/miscx.h"
+#include "director/lingo/xlibs/m/mmaskxobj.h"
+#include "director/lingo/xlibs/m/mmovie.h"
+#include "director/lingo/xlibs/m/moovxobj.h"
+#include "director/lingo/xlibs/m/movemousejp.h"
+#include "director/lingo/xlibs/m/movemousexobj.h"
+#include "director/lingo/xlibs/m/movieidxxobj.h"
+#include "director/lingo/xlibs/m/movutils.h"
+#include "director/lingo/xlibs/m/msfile.h"
+#include "director/lingo/xlibs/m/mystisle.h"
+#include "director/lingo/xlibs/o/openbleedwindowxcmd.h"
+#include "director/lingo/xlibs/o/orthoplayxobj.h"
+#include "director/lingo/xlibs/p/paco.h"
+#include "director/lingo/xlibs/p/palxobj.h"
+#include "director/lingo/xlibs/p/panel.h"
+#include "director/lingo/xlibs/p/pharaohs.h"
+#include "director/lingo/xlibs/p/popupmenuxobj.h"
+#include "director/lingo/xlibs/p/porta.h"
+#include "director/lingo/xlibs/p/prefpath.h"
+#include "director/lingo/xlibs/p/printomatic.h"
+#include "director/lingo/xlibs/p/processxobj.h"
+#include "director/lingo/xlibs/p/putcurs.h"
+#include "director/lingo/xlibs/q/qtmovie.h"
+#include "director/lingo/xlibs/q/qtcatmovieplayerxobj.h"
+#include "director/lingo/xlibs/q/qtvr.h"
+#include "director/lingo/xlibs/q/quicktime.h"
+#include "director/lingo/xlibs/r/registercomponent.h"
+#include "director/lingo/xlibs/r/remixxcmd.h"
+#include "director/lingo/xlibs/s/serialportxobj.h"
+#include "director/lingo/xlibs/s/smallutil.h"
+#include "director/lingo/xlibs/s/soundjam.h"
+#include "director/lingo/xlibs/s/spacemgr.h"
+#include "director/lingo/xlibs/s/stagetc.h"
+#include "director/lingo/xlibs/s/syscolor.h"
+#include "director/lingo/xlibs/t/tengu.h"
+#include "director/lingo/xlibs/u/unittest.h"
+#include "director/lingo/xlibs/v/valkyrie.h"
+#include "director/lingo/xlibs/v/versions.h"
+#include "director/lingo/xlibs/v/videodiscxobj.h"
+#include "director/lingo/xlibs/v/vmisonxfcn.h"
+#include "director/lingo/xlibs/v/vmpresent.h"
+#include "director/lingo/xlibs/v/volumelist.h"
+#include "director/lingo/xlibs/v/voyagerxsound.h"
+#include "director/lingo/xlibs/w/widgetxobj.h"
+#include "director/lingo/xlibs/w/window.h"
+#include "director/lingo/xlibs/w/wininfo.h"
+#include "director/lingo/xlibs/w/winxobj.h"
+#include "director/lingo/xlibs/x/xcmdglue.h"
+#include "director/lingo/xlibs/x/xio.h"
+#include "director/lingo/xlibs/x/xplayanim.h"
+#include "director/lingo/xlibs/x/xplaypacoxfcn.h"
+#include "director/lingo/xlibs/x/xsoundxfcn.h"
+#include "director/lingo/xlibs/x/xwin.h"
+#include "director/lingo/xlibs/y/yasix.h"
 #include "director/lingo/xtras/directsound.h"
 #include "director/lingo/xtras/filextra.h"
 #include "director/lingo/xtras/keypoll.h"
 #include "director/lingo/xtras/masterapp.h"
 #include "director/lingo/xtras/openurl.h"
+#include "director/lingo/xtras/oscheck.h"
 #include "director/lingo/xtras/qtvrxtra.h"
 #include "director/lingo/xtras/rtk.h"
 #include "director/lingo/xtras/scrnutil.h"
@@ -243,7 +247,7 @@ static const struct XLibProto {
 	XLIBDEF(DPWAVIXObj,			kXObj,			300),	// D3
 	XLIBDEF(DPWQTWXObj,			kXObj,			300),	// D3
 	XLIBDEF(DarkenScreen,		kXObj,			300),	// D3
-	XLIBDEF(DateUtilXObj,			kXObj,					400),	// D4
+	XLIBDEF(DateUtilXObj,		kXObj,			400),	// D4
 	XLIBDEF(DeveloperStack,		kXObj,			300),	// D3
 	XLIBDEF(DialogsXObj,		kXObj,			400),	// D4
 	XLIBDEF(DirUtilXObj,		kXObj,			400),	// D4
@@ -254,13 +258,13 @@ static const struct XLibProto {
 	XLIBDEF(FEDraculXObj,		kXObj,			400),	// D4
 	XLIBDEF(FEIMasksXObj,		kXObj,			400),	// D4
 	XLIBDEF(FEIPrefsXObj,		kXObj,			400),	// D4
-	XLIBDEF(FSUtilXObj,			kXObj,					400),	// D4
+	XLIBDEF(FSUtilXObj,			kXObj,			400),	// D4
 	XLIBDEF(FadeGammaDownXCMD,	kXObj,			400),	// D4
 	XLIBDEF(FadeGammaUpXCMD,	kXObj,			400),	// D4
 	XLIBDEF(FadeGammaXCMD,		kXObj,			400),	// D4
 	XLIBDEF(FileExists,			kXObj,			300),	// D3
 	XLIBDEF(FileIO,				kXObj | kXtraObj,200),	// D2
-	XLIBDEF(FileXtra,			kXtraObj,					500),	// D5
+	XLIBDEF(FileXtra,			kXtraObj,		500),	// D5
 	XLIBDEF(FindFolder,			kXObj,			300),	// D3
 	XLIBDEF(FindSys,			kXObj,			400),	// D4
 	XLIBDEF(FindWin,			kXObj,			400),	// D4
@@ -270,9 +274,9 @@ static const struct XLibProto {
 	XLIBDEF(GenUtilsXObj,		kXObj,			400),	// D4
 	XLIBDEF(GetScreenRectsXFCN,	kXObj,			300),	// D3
 	XLIBDEF(GetScreenSizeXFCN,	kXObj,			300),	// D3
-	XLIBDEF(GetSoundInLevelXObj,			kXObj,					400),	// D4
+	XLIBDEF(GetSoundInLevelXObj,kXObj,			400),	// D4
 	XLIBDEF(GpidXObj,			kXObj,			400),	// D4
-	XLIBDEF(HenryXObj,			kXObj,					400),	// D4
+	XLIBDEF(HenryXObj,			kXObj,			400),	// D4
 	XLIBDEF(HitMap,				kXObj,			400),	// D4
 	XLIBDEF(IniXObj,			kXObj,			400),	// D4
 	XLIBDEF(InstObjXObj,		kXObj,			400),	// D4
@@ -282,34 +286,37 @@ static const struct XLibProto {
 	XLIBDEF(JourneyWareXINIXObj,kXObj,			400),	// D4
 	XLIBDEF(KeypollXtra,		kXtraObj,		500),	// D5
 	XLIBDEF(LabelDrvXObj,		kXObj,			400),	// D4
-	XLIBDEF(ListDevXObj,			kXObj,					500),	// D5
+	XLIBDEF(ListDevXObj,		kXObj,			500),	// D5
 	XLIBDEF(MMovieXObj,			kXObj,			400),	// D4
 	XLIBDEF(ManiacBgXObj,		kXObj,			300),	// D3
 	XLIBDEF(MapNavigatorXObj,	kXObj,			400),	// D4
-	XLIBDEF(MasterAppXtra,			kXtraObj,					500),	// D5
+	XLIBDEF(MasterAppXtra,		kXtraObj,		500),	// D5
 	XLIBDEF(MemCheckXObj,		kXObj,			400),	// D4
 	XLIBDEF(MemoryXObj,			kXObj,			300),	// D3
 	XLIBDEF(Misc,				kXObj,			400),	// D4
 	XLIBDEF(MiscX,				kXObj,			400),	// D4
 	XLIBDEF(MMaskXObj,			kXObj,			400),	// D4
 	XLIBDEF(MoovXObj,			kXObj,			300),	// D3
-	XLIBDEF(MoveMouseJPXObj,			kXObj,					400),	// D4
+	XLIBDEF(MoveMouseJPXObj,	kXObj,			400),	// D4
 	XLIBDEF(MoveMouseXObj,		kXObj,			400),	// D4
 	XLIBDEF(MovieIdxXObj,		kXObj,			400),	// D4
 	XLIBDEF(MovUtilsXObj,		kXObj,			400),	// D4
-	XLIBDEF(MystIsleXObj,			kXObj,					400),	// D4
+	XLIBDEF(MSFile,             kXObj,          400),   // D4
+	XLIBDEF(MystIsleXObj,		kXObj,			400),	// D4
+	XLIBDEF(OSCheckXtra,		kXtraObj,		400),	// D4
 	XLIBDEF(OpenBleedWindowXCMD,kXObj,			300),	// D3
-	XLIBDEF(OpenURLXtra,			kXtraObj,					500),	// D5
+	XLIBDEF(OpenURLXtra,		kXtraObj,		500),	// D5
 	XLIBDEF(OrthoPlayXObj,		kXObj,			400),	// D4
 	XLIBDEF(PACoXObj,			kXObj,			300),	// D3
 	XLIBDEF(PalXObj,			kXObj,			400),	// D4
 	XLIBDEF(PanelXObj,			kXObj,			200),	// D2
-	XLIBDEF(PharaohsXObj,			kXObj,					400),	// D4
+	XLIBDEF(PharaohsXObj,		kXObj,			400),	// D4
 	XLIBDEF(PopUpMenuXObj,		kXObj,			200),	// D2
 	XLIBDEF(Porta,				kXObj,			300),	// D3
 	XLIBDEF(PrefPath,			kXObj,			400),	// D4
 	XLIBDEF(PrintOMaticXObj,	kXObj | kXtraObj,400),	// D4
 	XLIBDEF(ProcessXObj,		kXObj,			400),	// D4
+	XLIBDEF(PutcursXObj,		kXObj,			400),	// D4
 	XLIBDEF(QTCatMoviePlayerXObj,kXObj,			400),	// D4
 	XLIBDEF(QTMovie,			kXObj,			400),	// D4
 	XLIBDEF(QTVR,				kXObj,			400),	// D4
@@ -318,33 +325,34 @@ static const struct XLibProto {
 	XLIBDEF(RearWindowXObj,		kXObj,			400),	// D4
 	XLIBDEF(RegisterComponent,	kXObj,			400),	// D4
 	XLIBDEF(RemixXCMD,			kXObj,			300),	// D3
-	XLIBDEF(RolloverToolkitXtra,			kXtraObj,					500),	// D5
+	XLIBDEF(RolloverToolkitXtra,kXtraObj,		500),	// D5
 	XLIBDEF(ScrnUtilXtra,		kXtraObj,		500),	// D5
 	XLIBDEF(SerialPortXObj,		kXObj,			200),	// D2
-	XLIBDEF(SmallUtilXObj,			kXObj,					400),	// D4
+	XLIBDEF(SmallUtilXObj,		kXObj,			400),	// D4
 	XLIBDEF(SoundJam,			kXObj,			400),	// D4
 	XLIBDEF(SpaceMgr,			kXObj,			400),	// D4
 	XLIBDEF(StageTCXObj,		kXObj,			400),	// D4
-	XLIBDEF(SysColorXObj,			kXObj,					400),	// D4
-	XLIBDEF(TenguXObj,			kXObj,					400),	// D4
+	XLIBDEF(SysColorXObj,		kXObj,			400),	// D4
+	XLIBDEF(TenguXObj,			kXObj,			400),	// D4
 	XLIBDEF(TimextraXtra,		kXtraObj,		500),	// D5
 	XLIBDEF(UnitTestXObj,		kXObj,			400),	// D4
-	XLIBDEF(VMPresentXObj,			kXObj,					400),	// D4
+	XLIBDEF(VMPresentXObj,		kXObj,			400),	// D4
 	XLIBDEF(VMisOnXFCN,			kXObj,			400),	// D4
 	XLIBDEF(ValkyrieXObj,		kXObj,			400),	// D4
+	XLIBDEF(VersionsXObj,		kXObj,			400),	// D4
 	XLIBDEF(VideodiscXObj,		kXObj,			200),	// D2
 	XLIBDEF(VolumeList,			kXObj,			300),	// D3
-	XLIBDEF(VoyagerXSoundXObj,			kXObj,					400),	// D4
+	XLIBDEF(VoyagerXSoundXObj,	kXObj,			400),	// D4
 	XLIBDEF(WinInfoXObj,		kXObj,			400),	// D4
 	XLIBDEF(WidgetXObj, 		kXObj,			400),	// D4
 	XLIBDEF(WindowXObj,			kXObj,			200),	// D2
 	XLIBDEF(XCMDGlueXObj,		kXObj,			200),	// D2
-	XLIBDEF(XPlayPACoXFCN,			kXObj,					300),	// D3
+	XLIBDEF(XPlayPACoXFCN,		kXObj,			300),	// D3
 	XLIBDEF(XSoundXFCN,			kXObj,			400),	// D4
 	XLIBDEF(XWINXObj,			kXObj,			300),	// D3
 	XLIBDEF(XioXObj,			kXObj,			400),	// D3
 	XLIBDEF(XPlayAnim,			kXObj,			300),	// D3
-	XLIBDEF(XsoundXtra,			kXtraObj,					500),	// D5
+	XLIBDEF(XsoundXtra,			kXtraObj,		500),	// D5
 	XLIBDEF(Yasix,				kXObj,			300),	// D3
 	{ nullptr, nullptr, nullptr, nullptr, 0, 0 }
 };
@@ -468,7 +476,9 @@ void Lingo::reloadOpenXLibs() {
 
 void LM::m_new(int nargs) {
 	// This is usually overridden by a user-defined mNew
-	g_lingo->printSTUBWithArglist("m_new", nargs);
+	//
+	// However, in behaviors it is often absent, and it is
+	// in essence our default constructor.
 	g_lingo->push(g_lingo->_state->me);
 }
 
@@ -478,8 +488,8 @@ void LM::m_dispose(int nargs) {
 
 /* ScriptContext */
 
-ScriptContext::ScriptContext(Common::String name, ScriptType type, int id, uint16 castLibHint)
-	: Object<ScriptContext>(name), _scriptType(type), _id(id), _castLibHint(castLibHint) {
+ScriptContext::ScriptContext(Common::String name, ScriptType type, int id, uint16 castLibHint, uint16 parentNumber, int scriptId)
+	: Object<ScriptContext>(name), _scriptType(type), _id(id), _castLibHint(castLibHint), _parentNumber(parentNumber), _scriptId(scriptId) {
 	_objType = kScriptObj;
 }
 
@@ -497,6 +507,8 @@ ScriptContext::ScriptContext(const ScriptContext &sc) : Object<ScriptContext>(sc
 	_constants = sc._constants;
 	_properties = sc._properties;
 	_propertyNames = sc._propertyNames;
+	_parentNumber = sc._parentNumber;
+	_scriptId = sc._scriptId;
 
 	_id = sc._id;
 	_castLibHint = sc._castLibHint;
@@ -571,7 +583,13 @@ bool ScriptContext::hasProp(const Common::String &propName) {
 				&& (_properties["ancestor"].u.obj->getObjType() & (kScriptObj | kXtraObj))) {
 			return _properties["ancestor"].u.obj->hasProp(propName);
 		}
+
+		// This is used by behaviors
+		if (propName.equalsIgnoreCase("spriteNum")) {
+			return true;
+		}
 	}
+
 	return false;
 }
 
@@ -587,6 +605,11 @@ Datum ScriptContext::getProp(const Common::String &propName) {
 				&& (_properties["ancestor"].u.obj->getObjType() & (kScriptObj | kXtraObj))) {
 			debugC(3, kDebugLingoExec, "Getting prop '%s' from ancestor: <%s>", propName.c_str(), _properties["ancestor"].asString(true).c_str());
 			return _properties["ancestor"].u.obj->getProp(propName);
+		}
+
+		// This is used by behaviors
+		if (propName.equalsIgnoreCase("spriteNum")) {
+			return Datum((int)g_director->getCurrentMovie()->_currentSpriteNum);
 		}
 	}
 	_propertyNames.push_back(propName);
@@ -608,32 +631,29 @@ uint32 ScriptContext::getPropCount() {
 	return _propertyNames.size();
 }
 
-bool ScriptContext::setProp(const Common::String &propName, const Datum &value, bool force) {
+void ScriptContext::setProp(const Common::String &propName, const Datum &value, bool force) {
 	if (_disposed) {
 		error("Property '%s' accessed on disposed object <%s>", propName.c_str(), Datum(this).asString(true).c_str());
 	}
 	if (_properties.contains(propName)) {
 		_properties[propName] = value;
-		return true;
+		return;
 	}
 	if (force) {
 		// used by e.g. the script compiler to add properties
 		_propertyNames.push_back(propName);
 		_properties[propName] = value;
-		return true;
 	} else if (_objType == kScriptObj) {
 		if (_properties.contains("ancestor") && _properties["ancestor"].type == OBJECT
 				&& (_properties["ancestor"].u.obj->getObjType() & (kScriptObj | kXtraObj))) {
 			debugC(3, kDebugLingoExec, "Getting prop '%s' from ancestor: <%s>", propName.c_str(), _properties["ancestor"].asString(true).c_str());
-			return _properties["ancestor"].u.obj->setProp(propName, value, force);
+			_properties["ancestor"].u.obj->setProp(propName, value, force);
 		}
 	} else if (_objType == kFactoryObj) {
 		// D3 style anonymous objects/factories, set whatever properties you like
 		_propertyNames.push_back(propName);
 		_properties[propName] = value;
-		return true;
 	}
-	return false;
 }
 
 Common::String ScriptContext::formatFunctionList(const char *prefix) {
@@ -749,14 +769,14 @@ Datum Window::getProp(const Common::String &propName) {
 	return Datum();
 }
 
-bool Window::setProp(const Common::String &propName, const Datum &value, bool force) {
+void Window::setProp(const Common::String &propName, const Datum &value, bool force) {
 	Common::String fieldName = Common::String::format("%d%s", kTheWindow, propName.c_str());
 	if (g_lingo->_theEntityFields.contains(fieldName)) {
-		return setField(g_lingo->_theEntityFields[fieldName]->field, value);
+		setField(g_lingo->_theEntityFields[fieldName]->field, value);
+		return;
 	}
 
 	warning("Window::setProp: unknown property '%s'", propName.c_str());
-	return false;
 }
 
 bool Window::hasField(int field) {
@@ -780,11 +800,11 @@ bool Window::hasField(int field) {
 Datum Window::getField(int field) {
 	switch (field) {
 	case kTheTitle:
-		return getTitle();
+		return _window->getTitle();
 	case kTheTitleVisible:
-		return isTitleVisible();
+		return _window->isTitleVisible();
 	case kTheVisible:
-		return isVisible();
+		return _window->isVisible();
 	case kTheWindowType:
 		return getWindowType();
 	case kTheRect:
@@ -794,6 +814,11 @@ Datum Window::getField(int field) {
 	case kTheFileName:
 		return getFileName();
 	case kTheDrawRect:
+		warning("Window::getField: poorly handled getting field 'drawRect'");
+		ensureMovieIsLoaded();
+
+		// TODO: This should allow stretching or panning
+		return getStageRect();
 	case kTheSourceRect:
 	// case kTheImage:
 	// case kThePicture::
@@ -805,31 +830,35 @@ Datum Window::getField(int field) {
 	}
 }
 
-bool Window::setField(int field, const Datum &value) {
+void Window::setField(int field, const Datum &value) {
 	switch (field) {
 	case kTheTitle:
 		setTitle(value.asString());
-		return true;
+		break;
 	case kTheTitleVisible:
 		setTitleVisible((bool)value.asInt());
-		return true;
+		break;
 	case kTheVisible:
 		setVisible((bool)value.asInt());
-		return true;
+		break;
 	case kTheWindowType:
 		setWindowType(value.asInt());
-		return true;
+		break;
+	case kTheDrawRect:
+		warning("Window::setField: poorly handled setting field 'drawRect'");
+		// fallthrough
 	case kTheRect:
-		return setStageRect(value);
+		setStageRect(value);
+		break;
 	case kTheModal:
 		setModal((bool)value.asInt());
-		return true;
+		break;
 	case kTheFileName:
 		setFileName(value.asString());
-		return true;
+		break;
 	default:
 		warning("Window::setField: unhandled field '%s'", g_lingo->field2str(field));
-		return false;
+		break;
 	}
 }
 
@@ -875,7 +904,11 @@ void LM::m_forget(int nargs) {
 
 void LM::m_open(int nargs) {
 	Window *me = static_cast<Window *>(g_lingo->_state->me.u.obj);
+	bool wasVisible = me->_window->isVisible();
 	me->setVisible(true);
+
+	if (!wasVisible)
+		me->sendWindowEvent(kEventOpenWindow);
 }
 
 void LM::m_moveToBack(int nargs) {
@@ -887,7 +920,27 @@ void LM::m_moveToFront(int nargs) {
 	Window *me = static_cast<Window *>(g_lingo->_state->me.u.obj);
 	me->ensureMovieIsLoaded();
 
+	bool wasActive = (g_director->_wm->getActiveWindow() == me->getId());
 	g_director->_wm->setActiveWindow(me->getId());
+
+	if (!wasActive)
+		me->sendWindowEvent(kEventOpenWindow);
 }
+
+// Actor
+/*
+  collectChangeRects
+  getAProp
+  hitTest
+  ilk
+  mouseDown
+  mouseHitTest
+  mouseTrack
+  mouseUp
+  setAProp
+  stepFrame
+  updateRect
+*/
+
 
 } // End of namespace Director

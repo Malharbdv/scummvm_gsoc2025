@@ -105,6 +105,7 @@ public:
 	void loadLingoContext(Common::SeekableReadStreamEndian &stream);
 	void loadExternalSound(Common::SeekableReadStreamEndian &stream);
 	void loadSord(Common::SeekableReadStreamEndian &stream);
+	bool importFileInto(int castId, const Common::Path &path);
 
 	void saveConfig(Common::SeekableWriteStream *writeStream, uint32 offset);
 	void saveCastData(Common::SeekableWriteStream *writeStream, Resource *res);
@@ -218,7 +219,7 @@ public:
 	/* 31 */ uint8 _field18;
 	/* 32 */ int32 _field19;
 	/* 36 */ int16 _version;
-	/* 38 */ int16 _field21;
+	/* 38 */ int16 _movieDepth;
 	/* 40 */ int32 _field22;
 	/* 44 */ int32 _field23;
 	/* 48 */ int32 _field24;

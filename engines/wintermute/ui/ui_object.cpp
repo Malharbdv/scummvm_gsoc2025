@@ -35,6 +35,7 @@
 #include "engines/wintermute/base/scriptables/script_value.h"
 #include "engines/wintermute/base/scriptables/script_stack.h"
 #include "engines/wintermute/base/font/base_font_storage.h"
+#include "engines/wintermute/dcgf.h"
 
 namespace Wintermute {
 
@@ -71,7 +72,7 @@ UIObject::UIObject(BaseGame *inGame) : BaseObject(inGame) {
 
 //////////////////////////////////////////////////////////////////////////
 UIObject::~UIObject() {
-	if (!_gameRef->_loadInProgress) {
+	if (!_game->_loadInProgress) {
 		SystemClassRegistry::getInstance()->enumInstances(BaseGame::invalidateValues, "ScValue", (void *)this);
 	}
 
@@ -79,7 +80,7 @@ UIObject::~UIObject() {
 		delete _back;
 	}
 	if (_font && !_sharedFonts) {
-		_gameRef->_fontStorage->removeFont(_font);
+		_game->_fontStorage->removeFont(_font);
 	}
 
 	if (_image && !_sharedImages) {
@@ -126,7 +127,7 @@ void UIObject::setListener(BaseScriptHolder *object, BaseScriptHolder *listenerO
 
 //////////////////////////////////////////////////////////////////////////
 void UIObject::correctSize() {
-	Rect32 rect;
+	Common::Rect32 rect;
 
 	if (_width <= 0) {
 		if (_image) {
@@ -161,13 +162,13 @@ bool UIObject::scCallMethod(ScScript *script, ScStack *stack, ScStack *thisStack
 		ScValue *val = stack->pop();
 
 		if (_font) {
-			_gameRef->_fontStorage->removeFont(_font);
+			_game->_fontStorage->removeFont(_font);
 		}
 		if (val->isNULL()) {
 			_font = nullptr;
 			stack->pushBool(true);
 		} else {
-			_font = _gameRef->_fontStorage->addFont(val->getString());
+			_font = _game->_fontStorage->addFont(val->getString());
 			stack->pushBool(_font != nullptr);
 		}
 		return STATUS_OK;
@@ -182,17 +183,15 @@ bool UIObject::scCallMethod(ScScript *script, ScStack *stack, ScStack *thisStack
 
 		/* const char *filename = */ val->getString();
 
-		delete _image;
-		_image = nullptr;
+		SAFE_DELETE(_image);
 		if (val->isNULL()) {
 			stack->pushBool(true);
 			return STATUS_OK;
 		}
 
-		_image = new BaseSprite(_gameRef);
+		_image = new BaseSprite(_game);
 		if (!_image || DID_FAIL(_image->loadFile(val->getString()))) {
-			delete _image;
-			_image = nullptr;
+			SAFE_DELETE(_image);
 			stack->pushBool(false);
 		} else {
 			stack->pushBool(true);
@@ -206,10 +205,10 @@ bool UIObject::scCallMethod(ScScript *script, ScStack *stack, ScStack *thisStack
 	//////////////////////////////////////////////////////////////////////////
 	else if (strcmp(name, "GetImage") == 0) {
 		stack->correctParams(0);
-		if (!_image || !_image->getFilename()) {
+		if (!_image || !_image->_filename || !_image->_filename[0]) {
 			stack->pushNULL();
 		} else {
-			stack->pushString(_image->getFilename());
+			stack->pushString(_image->_filename);
 		}
 
 		return STATUS_OK;
@@ -356,13 +355,13 @@ bool UIObject::scCallMethod(ScScript *script, ScStack *stack, ScStack *thisStack
 
 
 //////////////////////////////////////////////////////////////////////////
-ScValue *UIObject::scGetProperty(const Common::String &name) {
+ScValue *UIObject::scGetProperty(const char *name) {
 	_scValue->setNULL();
 
 	//////////////////////////////////////////////////////////////////////////
 	// Type
 	//////////////////////////////////////////////////////////////////////////
-	if (name == "Type") {
+	if (strcmp(name, "Type") == 0) {
 		_scValue->setString("ui_object");
 		return _scValue;
 	}
@@ -370,7 +369,7 @@ ScValue *UIObject::scGetProperty(const Common::String &name) {
 	//////////////////////////////////////////////////////////////////////////
 	// Name
 	//////////////////////////////////////////////////////////////////////////
-	else if (name == "Name") {
+	else if (strcmp(name, "Name") == 0) {
 		_scValue->setString(_name);
 		return _scValue;
 	}
@@ -378,7 +377,7 @@ ScValue *UIObject::scGetProperty(const Common::String &name) {
 	//////////////////////////////////////////////////////////////////////////
 	// Parent (RO)
 	//////////////////////////////////////////////////////////////////////////
-	else if (name == "Parent") {
+	else if (strcmp(name, "Parent") == 0) {
 		_scValue->setNative(_parent, true);
 		return _scValue;
 	}
@@ -386,7 +385,7 @@ ScValue *UIObject::scGetProperty(const Common::String &name) {
 	//////////////////////////////////////////////////////////////////////////
 	// ParentNotify
 	//////////////////////////////////////////////////////////////////////////
-	else if (name == "ParentNotify") {
+	else if (strcmp(name, "ParentNotify") == 0) {
 		_scValue->setBool(_parentNotify);
 		return _scValue;
 	}
@@ -394,7 +393,7 @@ ScValue *UIObject::scGetProperty(const Common::String &name) {
 	//////////////////////////////////////////////////////////////////////////
 	// Width
 	//////////////////////////////////////////////////////////////////////////
-	else if (name == "Width") {
+	else if (strcmp(name, "Width") == 0) {
 		_scValue->setInt(_width);
 		return _scValue;
 	}
@@ -402,7 +401,7 @@ ScValue *UIObject::scGetProperty(const Common::String &name) {
 	//////////////////////////////////////////////////////////////////////////
 	// Height
 	//////////////////////////////////////////////////////////////////////////
-	else if (name == "Height") {
+	else if (strcmp(name, "Height") == 0) {
 		_scValue->setInt(_height);
 		return _scValue;
 	}
@@ -410,7 +409,7 @@ ScValue *UIObject::scGetProperty(const Common::String &name) {
 	//////////////////////////////////////////////////////////////////////////
 	// Visible
 	//////////////////////////////////////////////////////////////////////////
-	else if (name == "Visible") {
+	else if (strcmp(name, "Visible") == 0) {
 		_scValue->setBool(_visible);
 		return _scValue;
 	}
@@ -418,7 +417,7 @@ ScValue *UIObject::scGetProperty(const Common::String &name) {
 	//////////////////////////////////////////////////////////////////////////
 	// Disabled
 	//////////////////////////////////////////////////////////////////////////
-	else if (name == "Disabled") {
+	else if (strcmp(name, "Disabled") == 0) {
 		_scValue->setBool(_disable);
 		return _scValue;
 	}
@@ -426,7 +425,7 @@ ScValue *UIObject::scGetProperty(const Common::String &name) {
 	//////////////////////////////////////////////////////////////////////////
 	// Text
 	//////////////////////////////////////////////////////////////////////////
-	else if (name == "Text") {
+	else if (strcmp(name, "Text") == 0) {
 		_scValue->setString(_text);
 		return _scValue;
 	}
@@ -434,13 +433,13 @@ ScValue *UIObject::scGetProperty(const Common::String &name) {
 	//////////////////////////////////////////////////////////////////////////
 	// NextSibling (RO) / PrevSibling (RO)
 	//////////////////////////////////////////////////////////////////////////
-	else if (name == "NextSibling" || name == "PrevSibling") {
+	else if (strcmp(name, "NextSibling") == 0 || strcmp(name, "PrevSibling") == 0) {
 		_scValue->setNULL();
 		if (_parent && _parent->_type == UI_WINDOW) {
 			UIWindow *win = (UIWindow *)_parent;
 			for (int32 i = 0; i < win->_widgets.getSize(); i++) {
 				if (win->_widgets[i] == this) {
-					if (name == "NextSibling") {
+					if (strcmp(name, "NextSibling") == 0) {
 						if (i < win->_widgets.getSize() - 1) {
 							_scValue->setNative(win->_widgets[i + 1], true);
 						}
@@ -530,14 +529,14 @@ const char *UIObject::scToString() {
 
 //////////////////////////////////////////////////////////////////////////
 bool UIObject::isFocused() {
-	if (!_gameRef->_focusedWindow) {
+	if (!_game->_focusedWindow) {
 		return false;
 	}
-	if (_gameRef->_focusedWindow == this) {
+	if (_game->_focusedWindow == this) {
 		return true;
 	}
 
-	UIObject *obj = _gameRef->_focusedWindow;
+	UIObject *obj = _game->_focusedWindow;
 	while (obj) {
 		if (obj == this) {
 			return true;
@@ -579,7 +578,7 @@ bool UIObject::focus() {
 				}
 			} else {
 				if (obj->_type == UI_WINDOW) {
-					_gameRef->focusWindow((UIWindow *)obj);
+					_game->focusWindow((UIWindow *)obj);
 				}
 			}
 
@@ -640,16 +639,16 @@ bool UIObject::persist(BasePersistenceManager *persistMgr) {
 }
 
 //////////////////////////////////////////////////////////////////////////
-/*char *CUIObject::GetAccessCaption() {
-	if (m_AccessCaption)
-		return m_AccessCaption;
+const char *UIObject::getAccessCaption() {
+	if (_accessCaption)
+		return _accessCaption;
 	else {
-		if (m_Text)
-			return m_Text;
+		if (_text && _text[0])
+			return _text;
 		else
-			return GetCaption();
+			return getCaption();
 	}
-}*/
+}
 
 //////////////////////////////////////////////////////////////////////////
 bool UIObject::saveAsText(BaseDynamicBuffer *buffer, int indent) {

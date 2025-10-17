@@ -156,6 +156,7 @@ public:
 	void clearExits();
 	void unselectExits();
 	void updateExit(ObjID id);
+	void resetExitBackgroundPattern();
 
 	Common::String getConsoleText() const;
 	void setConsoleText(const Common::String &text);
@@ -177,6 +178,10 @@ public:
 
 	void createInnerSurface(Graphics::ManagedSurface *innerSurface, Graphics::ManagedSurface *outerSurface, const BorderBounds &borders);
 
+private:
+	bool decodeStartupScreen();
+	bool decodeTitleScreen();
+	bool displayTitleScreenAndWait(uint32 ms);
 
 private: // Attributes
 

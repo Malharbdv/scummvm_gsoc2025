@@ -294,11 +294,6 @@ void Draw_v2::printTotText(int16 id) {
 	_backColor = *ptr++;
 	_transparency = 1;
 
-	if ((_vm->getGameType() == kGameTypeAdibou2 ||
-		 _vm->getGameType() == kGameTypeAdi4) &&
-		_backColor == 16)
-		_backColor = -1;
-
 	spriteOperation(DRAW_CLEARRECT);
 
 	_backColor = 0;
@@ -899,7 +894,7 @@ void Draw_v2::spriteOperation(int16 operation, bool ttsAddHotspotText) {
 		}
 
 		if (ttsAddHotspotText) {
-			_vm->_game->_hotspots->addHotspotText(_textToPrint, left, _destSpriteY,
+			_vm->_game->_hotspots->addHotspotTTSText(_textToPrint, left, _destSpriteY,
 											_destSpriteX - 1, _destSpriteY + _fonts[_fontIndex]->getCharHeight() - 1, _destSurface);
 		}
 #endif

@@ -22,6 +22,7 @@
 #include "common/compression/vise.h"
 #include "common/macresman.h"
 #include "common/memstream.h"
+#include "common/platform.h"
 #include "common/savefile.h"
 #include "director/director.h"
 
@@ -105,8 +106,24 @@ struct CachedFile {
 	{"tkkg1", Common::kPlatformWindows,
 		// TKKG1 checks a file to determine the location of the CD.
 		"PATH.INI",
-		(const byte *)"[cd-path]\r\npath=d:\\", -1
+		(const byte *)"[cd-path]\r\npath=d:\\\r\n", -1
 	},
+	{"tkkg2", Common::kPlatformWindows,
+		// TKKG2 checks a file to determine the location of the CD.
+		"PATH.INI",
+		(const byte *)"[cd-path]\r\npath=d:\\\r\n", -1
+	},
+	{"tkkg3", Common::kPlatformWindows,
+		// TKKG3 checks a file to determine the location of the CD.
+		"PATH.INI",
+		(const byte *)"[cd-path]\r\npath=d:\\\r\n", -1
+	},
+	{"tkkg4", Common::kPlatformWindows,
+		// TKKG4 checks a file to determine the location of the CD.
+		"PATH.INI",
+		(const byte *)"[cd-path]\r\npath=d:\\\r\n", -1
+	},
+
 	// Professor Finkle's Times Table Factory has an installer that copies a bunch of empty files,
 	// which the game gets upset about if they don't exist.
 	{"finkletimes", Common::kPlatformWindows, "finkle.ini", (const byte *)"", 0},
@@ -122,6 +139,11 @@ struct CachedFile {
 	// Mission Code: Millennium expects the installer to have added an empty save file.
 	{"mcmillennium", Common::kPlatformWindows, "pc/players", (const byte *)"", 0},
 
+	// Pingu: A Barrel of Fun! expects a text file containing system paths to be written by InstallShield,
+	// and the placeholder text file in the archive will not work.
+	{ "pingu1", Common::kPlatformWindows, "PINGUDRV.PNG", (const byte *)"C:\\\r\nC:\\\r\nD:\\\r\n", -1},
+	{ "pingu1", Common::kPlatformWindows, "CHECKDRV.PNG", (const byte *)"D:\\\r\n", -1},
+
 	{ nullptr, Common::kPlatformUnknown, nullptr, nullptr, 0 }
 };
 
@@ -131,6 +153,8 @@ struct SaveFilePath {
 	const char *path;
 } const saveFilePaths[] = {
 	{ "darkeye", Common::kPlatformWindows, "SAVEDDKY/" },
+	{"simpsonsstudio", Common::kPlatformWindows, "SIMPSONS/SUPPORT/TOONDATA/"},
+	{"simpsonsstudio", Common::kPlatformMacintosh, "SIMPSONS/SUPPORT/TOONDATA/"},
 	{ nullptr, Common::kPlatformUnknown, nullptr },
 };
 
@@ -154,6 +178,10 @@ static void quirkForceFileIOXObj() {
 
 static void quirkForceFileIOXtra() {
 	g_director->_fileIOType = kXtraObj;
+}
+
+static void quirkVideoForWindowsPalette() {
+	g_director->_vfwPaletteHack = true;
 }
 
 static void quirkHollywoodHigh() {
@@ -283,6 +311,10 @@ const struct Quirk {
 	{ "ingenious", Common::kPlatformWindows, &quirkForceFileIOXObj },
 	{ "ingenious", Common::kPlatformMacintosh, &quirkForceFileIOXObj },
 
+	// McKenzie & Co. uses a greyscale palette in 8-bit mode, along with the standard 16 colour Windows palette.
+	// Remove the 16-colours from the video decoder.
+	{"mckenzie", Common::kPlatformWindows, &quirkVideoForWindowsPalette },
+
 	{ nullptr, Common::kPlatformUnknown, nullptr }
 };
 
@@ -331,7 +363,17 @@ void DirectorEngine::gameQuirks(const char *target, Common::Platform platform) {
 	if (!list.empty()) {
 		CachedArchive *archive = new CachedArchive(list);
 
-		SearchMan.add(kQuirksCacheArchive, archive);
+		// If gameQuirks is called as an update we need to remove the old quirks cache
+		// archive before adding the new one.
+		if (SearchMan.hasArchive(kQuirksCacheArchive)) {
+			SearchMan.remove(kQuirksCacheArchive);
+		}
+
+		// The order of precedence for file loading should be:
+		// - Save system
+		// - Quirks list
+		// - File system
+		SearchMan.add(kQuirksCacheArchive, archive, 5);
 	}
 }
 

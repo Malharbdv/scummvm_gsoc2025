@@ -209,8 +209,117 @@ void Gui::drawMenu() {
 	_menu->draw(&_screen);
 }
 
+bool Gui::decodeStartupScreen() {
+	Common::SeekableReadStream *stream = Common::MacResManager::openFileOrDataFork("StartupScreen");
+
+	if (!stream)
+		return false;
+
+	for (int y = 0; y < kScreenHeight; y++) {
+		for (int x = 0; x < kScreenWidth / 8; x++) {
+			byte b = stream->readByte();
+
+			for (int z = 0; z < 8; z++) {
+				_screen.setPixel(8 * x + z, y, (b & (0x80 >> z)) ? kColorBlack : kColorWhite);
+			}
+		}
+	}
+
+	return true;
+}
+
+bool Gui::decodeTitleScreen() {
+	Common::MacResManager resMan;
+	Common::Path titlePath = _engine->getFilePath(kTitlePathID);
+
+	if (resMan.open(titlePath)) {
+		Common::SeekableReadStream *stream = resMan.getResource(MKTAG('P', 'P', 'I', 'C'), 0);
+
+		if (stream) {
+			// New PPICT title screen
+			ImageAsset *title = new ImageAsset(stream);
+
+			_screen.fillRect(Common::Rect(kScreenWidth, kScreenHeight), kColorBlack);
+			title->blitInto(&_screen, 0, (kScreenHeight - title->getHeight()) / 2, kBlitDirect);
+
+			delete title;
+		} else {
+			// Old PACK title screen
+			stream = Common::MacResManager::openFileOrDataFork(titlePath);
+			if (!stream)
+				return false;
+
+			stream->seek(0x200);
+
+			for (int y = 0; y < 302; y++) {
+				byte line[72];
+				int count = 0;
+
+				while (count < 72) {
+					byte n = stream->readByte();
+
+					if (n == 0x80) {
+						// Do nothing
+					} else if (n & 0x80) {
+						n = (n ^ 0xFF) + 2;
+						byte v = stream->readByte();
+
+						while (n--)
+							line[count++] = v;
+					} else {
+						n++;
+						while (n--)
+							line[count++] = stream->readByte();
+					}
+				}
+
+				for (int x = 0; x < 512; x++)
+					_screen.setPixel(x, y, (line[x / 8] & (0x80 >> (x % 8))) ? kColorBlack : kColorWhite);
+			}
+
+			delete stream;
+		}
+	}
+
+	return true;
+}
+
+bool Gui::displayTitleScreenAndWait(uint32 ms) {
+	g_system->copyRectToScreen(_screen.getPixels(), kScreenWidth, 0, 0, kScreenWidth, kScreenHeight);
+
+	uint32 now = g_system->getMillis();
+	while (g_system->getMillis() < now + 3000) {
+		if (_engine->shouldQuit())
+			return false;
+
+		Common::Event event;
+
+		while (_engine->getEventManager()->pollEvent(event)) {
+			if (event.type == Common::EVENT_KEYDOWN && event.kbd.keycode == Common::KEYCODE_ESCAPE)
+				return false;
+		}
+
+		g_system->updateScreen();
+		g_system->delayMillis(10);
+	}
+
+	return true;
+}
+
 void Gui::drawTitle() {
-	warning("drawTitle hasn't been tested yet");
+	bool success = true;
+
+	_wm.pushCursor(Graphics::kMacCursorOff);
+
+	if (decodeStartupScreen())
+		success = displayTitleScreenAndWait(4000);
+
+	if (success) {
+		if (decodeTitleScreen())
+			displayTitleScreenAndWait(4000);
+	}
+
+	_wm.popCursor();
 }
 
 void Gui::clearControls() {
@@ -255,7 +364,7 @@ void Gui::initWindows() {
 	bounds = getWindowData(kOutConsoleWindow).bounds;
 	bbs = borderBounds(findWindowData(kOutConsoleWindow).type);
 	_outConsoleWindow = _wm.addTextWindow(&getCurrentFont(), kColorBlack, kColorWhite,
-										  bounds.width() - bbs.rightScrollbarWidth, Graphics::kTextAlignLeft, _menu, false);
+										  bounds.width() - bbs.rightScrollbarWidth, Graphics::kTextAlignLeft, _menu);
 	_outConsoleWindow->enableScrollbar(true);
 	_outConsoleWindow->setEditable(false);
 	loadBorders(_outConsoleWindow, findWindowData(kOutConsoleWindow).type);
@@ -289,9 +398,6 @@ void Gui::initWindows() {
 	_exitsWindow->setActive(false);
 	_exitsWindow->setCallback(exitsWindowCallback, this);
 	_exitsWindow->setTitle(findWindowData(kExitsWindow).title);
-	// TODO: In the original, the background is actually a clickable
-	// object that can be used to refer to the room itself. In that case,
-	// the background should be kPatternDarkGray.
 	_exitsWindow->setBackgroundPattern(kPatternLightGray);
 }
 
@@ -486,11 +592,10 @@ void Gui::loadDiploma() {
 	quitButton->setAction(kDAQuit);
 
 	// Image
-	Common::Path diplomaFilePath = _engine->getDiplomaFileName();
-	_resourceManager->open(diplomaFilePath);
-	Common::SeekableReadStream *stream = _resourceManager->getResource(MKTAG('P', 'P', 'I', 'C'), 0);
-
 	if (!_diplomaImage) {
+		Common::Path diplomaFilePath = _engine->getDiplomaFileName();
+		_resourceManager->open(diplomaFilePath);
+		Common::SeekableReadStream *stream = _resourceManager->getResource(MKTAG('P', 'P', 'I', 'C'), 0);
 		_diplomaImage = new ImageAsset(stream);
 	}
 
@@ -761,8 +866,6 @@ void Gui::drawInventories() {
 }
 
 void Gui::drawExitsWindow() {
-	_exitsWindow->setBackgroundPattern(kPatternLightGray);
-
 	Graphics::ManagedSurface *srf = _exitsWindow->getWindowSurface();
 
 	Common::Array<CommandButton>::const_iterator it = _exitsData->begin();
@@ -848,7 +951,7 @@ void Gui::drawWindowTitle(WindowReference target, Graphics::ManagedSurface *surf
 void Gui::drawDraggedObjects() {
 	for (uint i = 0; i < _draggedObjects.size(); i++) {
 		if (_draggedObjects[i].id != 0 &&
-			_engine->isObjVisible(_draggedObjects[i].id)) {
+			_engine->isObjVisible(_draggedObjects[i].id) && _draggedObjects[i].hasMoved) {
 			ensureAssetLoaded(_draggedObjects[i].id);
 			ImageAsset *asset = _assets[_draggedObjects[i].id];
 
@@ -993,6 +1096,12 @@ void Gui::updateExit(ObjID obj) {
 
 		_exitsData->push_back(CommandButton(data, this));
 	}
+}
+
+void Gui::resetExitBackgroundPattern() {
+	if (!_exitsWindow)
+		return;
+	_exitsWindow->setBackgroundPattern(kPatternLightGray);
 }
 
 Common::String Gui::getConsoleText() const {
@@ -1197,7 +1306,7 @@ void Gui::checkSelect(const WindowData &data, Common::Point pos, const Common::R
 			child = (*it).obj;
 		}
 	}
-	if (child != 0) {
+	if (child != 0 || data.refcon == kMainGameWindow) {
 		if (!isDoubleClick)
 			selectDraggable(child, ref, pos);
 		_engine->handleObjectSelect(child, ref, shiftPressed, isDoubleClick);
@@ -1231,17 +1340,19 @@ void Gui::selectDraggable(ObjID child, WindowReference origin, Common::Point cli
 		}
 
 		for (auto &selObj: _engine->getSelectedObjects()) {
-			DraggedObj obj;
-			obj.hasMoved = false;
-			obj.id = selObj;
-			obj.startWin = origin;
-			Common::Point localizedClick = click - getGlobalScrolledSurfacePosition(origin);
-			obj.mouseOffset = _engine->getObjPosition(selObj) - localizedClick;
-			obj.pos = click + obj.mouseOffset;
-			obj.startPos = obj.pos;
+			if (_engine->isObjDraggable(selObj)) {
+				DraggedObj obj;
+				obj.hasMoved = false;
+				obj.id = selObj;
+				obj.startWin = origin;
+				Common::Point localizedClick = click - getGlobalScrolledSurfacePosition(origin);
+				obj.mouseOffset = _engine->getObjPosition(selObj) - localizedClick;
+				obj.pos = click + obj.mouseOffset;
+				obj.startPos = obj.pos;
 
-			_draggedObjects.push_back(obj);
-			_draggedSurfaces.push_back(Graphics::ManagedSurface());
+				_draggedObjects.push_back(obj);
+				_draggedSurfaces.push_back(Graphics::ManagedSurface());
+			}
 		}
 		_engine->getSelectedObjects().clear();
 	}
@@ -1277,11 +1388,19 @@ void Gui::handleDragRelease(bool shiftPressed, bool isDoubleClick) {
 			return;
 		}
 		if (isDoubleClick) {
-			// WORKAROUND: Make windows to be selectable as objects to
-			// trigger certain events when double clicking.
-			// TODO: Make object selection, dragging done with single click.
-			// Handle this in a single click as well.
-			_engine->handleObjectSelect(0, destinationWindow, shiftPressed, isDoubleClick);
+			WindowData &data = findWindowData((WindowReference)destinationWindow);
+			Graphics::MacWindow *win = findWindow(destinationWindow);
+
+			ObjID child = 0;
+			Common::Rect clickRect = calculateClickRect(_cursor->getPos() + data.scrollPos, win->getInnerDimensions());
+
+			for (Common::Array<DrawableObject>::const_iterator it = data.children.begin(); it != data.children.end(); it++) {
+				if (canBeSelected((*it).obj, clickRect, destinationWindow)) {
+					child = (*it).obj;
+				}
+			}
+
+			_engine->handleObjectSelect(child, destinationWindow, shiftPressed, isDoubleClick);
 		}
 	}
 }
@@ -1500,6 +1619,11 @@ void Gui::highlightExitButton(ObjID objID) {
 		else
 			it->unselect();
 	}
+	if (objID == _engine->getParent(1)) {
+		_exitsWindow->setBackgroundPattern(kPatternDarkGray);
+	} else {
+		_exitsWindow->setBackgroundPattern(kPatternLightGray);
+	}
 }
 
 Common::Point Gui::getObjMeasures(ObjID obj) {
@@ -1523,6 +1647,8 @@ bool Gui::processEvent(Common::Event &event) {
 			moveDraggedObjects(event.mouse);
 		}
 		processed = true;
+	} else if (event.type == Common::EVENT_LBUTTONUP) {
+		clearDraggedObjects();
 	}
 
 	processed |= _wm.processEvent(event);

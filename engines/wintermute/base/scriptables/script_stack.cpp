@@ -41,7 +41,7 @@ ScStack::ScStack(BaseGame *inGame) : BaseClass(inGame) {
 
 //////////////////////////////////////////////////////////////////////////
 ScStack::~ScStack() {
-	//_gameRef->LOG(0, "STAT: Stack size: %d, SP=%d", _values.size(), _sP);
+	//_game->LOG(0, "STAT: Stack size: %d, SP=%d", _values.getSize(), _sP);
 
 	for (int32 i = 0; i < _values.getSize(); i++) {
 		delete _values[i];
@@ -53,7 +53,7 @@ ScStack::~ScStack() {
 //////////////////////////////////////////////////////////////////////////
 ScValue *ScStack::pop() {
 	if (_sP < 0) {
-		_gameRef->LOG(0, "Fatal: Stack underflow");
+		_game->LOG(0, "Fatal: Stack underflow");
 		return nullptr;
 	}
 
@@ -69,7 +69,7 @@ void ScStack::push(ScValue *val) {
 		_values[_sP]->cleanup();
 		_values[_sP]->copy(val);
 	} else {
-		ScValue *copyVal = new ScValue(_gameRef);
+		ScValue *copyVal = new ScValue(_game);
 		copyVal->copy(val);
 		_values.add(copyVal);
 	}
@@ -81,7 +81,7 @@ ScValue *ScStack::getPushValue() {
 	_sP++;
 
 	if (_sP >= _values.getSize()) {
-		ScValue *val = new ScValue(_gameRef);
+		ScValue *val = new ScValue(_game);
 		_values.add(val);
 	}
 	_values[_sP]->cleanup();
@@ -103,7 +103,7 @@ ScValue *ScStack::getTop() {
 //////////////////////////////////////////////////////////////////////////
 ScValue *ScStack::getAt(int index) {
 	index = _sP - index;
-	if (index < 0 || index >= (int32)_values.getSize()) {
+	if (index < 0 || index >= _values.getSize()) {
 		return nullptr;
 	} else {
 		return _values[index];
@@ -113,23 +113,23 @@ ScValue *ScStack::getAt(int index) {
 
 //////////////////////////////////////////////////////////////////////////
 void ScStack::correctParams(uint32 expectedParams) {
-	uint32 nuParams = (uint32)pop()->getInt();
+	uint32 numParams = (uint32)pop()->getInt();
 
-	if (expectedParams < nuParams) { // too many params
-		while (expectedParams < nuParams) {
-			//Pop();
+	if (expectedParams < numParams) { // too many params
+		while (expectedParams < numParams) {
+			//pop();
 			delete _values[_sP - expectedParams];
 			_values.removeAt(_sP - expectedParams);
-			nuParams--;
+			numParams--;
 			_sP--;
 		}
-	} else if (expectedParams > nuParams) { // need more params
-		while (expectedParams > nuParams) {
-			//Push(null_val);
-			ScValue *nullVal = new ScValue(_gameRef);
+	} else if (expectedParams > numParams) { // need more params
+		while (expectedParams > numParams) {
+			//push(nullVal);
+			ScValue *nullVal = new ScValue(_game);
 			nullVal->setNULL();
-			_values.insertAt(_sP - nuParams + 1, nullVal);
-			nuParams++;
+			_values.insertAt(_sP - numParams + 1, nullVal);
+			numParams++;
 			_sP++;
 
 			if (_values.getSize() > _sP + 1) {
@@ -180,7 +180,7 @@ void ScStack::pushNative(BaseScriptable *val, bool persistent) {
 //////////////////////////////////////////////////////////////////////////
 bool ScStack::persist(BasePersistenceManager *persistMgr) {
 
-	persistMgr->transferPtr(TMEMBER_PTR(_gameRef));
+	persistMgr->transferPtr(TMEMBER_PTR(_game));
 
 	persistMgr->transferSint32(TMEMBER(_sP));
 	_values.persist(persistMgr);

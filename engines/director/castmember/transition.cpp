@@ -100,25 +100,25 @@ Datum TransitionCastMember::getField(int field) {
 	return d;
 }
 
-bool TransitionCastMember::setField(int field, const Datum &d) {
+void TransitionCastMember::setField(int field, const Datum &d) {
 	switch (field) {
 	case kTheChangeArea:
 		_area = (bool)d.asInt();
-		break;
+		return;
 	case kTheChunkSize:
 		_chunkSize = d.asInt();
-		return true;
+		return;
 	case kTheDuration:
 		_durationMillis = d.asInt();
-		return true;
+		return;
 	case kTheTransitionType:
 		_transType = (TransitionType)d.asInt();
-		return true;
+		return;
 	default:
 		break;
 	}
 
-	return CastMember::setField(field, d);
+	CastMember::setField(field, d);
 }
 
 Common::String TransitionCastMember::formatInfo() {
@@ -134,7 +134,7 @@ uint32 TransitionCastMember::getCastDataSize() {
 		// _durationMiilis 2 bytes
 		return 6;
 	} else {
-		warning("RichTextCastMember()::getCastDataSize(): CastMember version invalid or not handled");
+		warning("TransitionCastMember()::getCastDataSize(): CastMember version invalid or not handled");
 		return 0;
 	}
 }
@@ -147,7 +147,7 @@ void TransitionCastMember::writeCastData(Common::SeekableWriteStream *writeStrea
 		writeStream->writeByte(_flags);
 		writeStream->writeUint16LE(_durationMillis);
 	} else {
-		warning("RichTextCastMember()::writeCastData(): CastMember version invalid or not handled");
+		warning("TransitionCastMember()::writeCastData(): CastMember version invalid or not handled");
 	}
 }
 

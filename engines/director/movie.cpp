@@ -46,10 +46,10 @@ Movie::Movie(Window *window) {
 	_lingo = _vm->getLingo();
 
 	_flags = 0;
-	_stageColor = _window->_wm->_colorWhite;
+	_stageColor = _vm->_wm->_colorWhite;
 
-	_currentActiveSpriteId = 0;
-	_currentMouseSpriteId = 0;
+	_lastClickedSpriteId = 0;
+	_currentSpriteNum = 0;
 	_currentEditableTextChannel = 0;
 	_lastEventTime = _vm->getMacTicks();
 	_lastKeyTime = _lastEventTime;
@@ -68,6 +68,8 @@ Movie::Movie(Window *window) {
 	_currentDraggedChannel = nullptr;
 	_currentHiliteChannelId = 0;
 	_mouseDownWasInButton = false;
+	_lastEnteredChannelId = 0;
+	_currentHoveredSpriteId = 0;
 
 	_version = 0;
 	_platform = Common::kPlatformMacintosh;
@@ -324,7 +326,7 @@ InfoEntries Movie::loadInfoEntries(Common::SeekableReadStreamEndian &stream, uin
 		res.strings[i].data = (byte *)malloc(res.strings[i].len);
 		stream.read(res.strings[i].data, res.strings[i].len);
 
-		debugC(6, kDebugLoading, "InfoEntry %d: %d bytes", i, res.strings[i].len);
+		debugC(6, kDebugLoading, "    InfoEntry %d: %d bytes", i, res.strings[i].len);
 	}
 
 	free(entries);

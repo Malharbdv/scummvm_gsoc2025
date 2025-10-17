@@ -29,6 +29,8 @@
 #include "graphics/macgui/macfontmanager.h"
 #include "graphics/macgui/macwindowmanager.h"
 
+#include "image/image_decoder.h"
+#include "image/pict.h"
 #include "video/qt_decoder.h"
 
 #include "director/director.h"
@@ -52,6 +54,7 @@
 #include "director/castmember/sound.h"
 #include "director/castmember/text.h"
 #include "director/castmember/transition.h"
+#include "director/castmember/xtra.h"
 #include "director/lingo/lingo-codegen.h"
 
 #include "director/lingo/lingodec/context.h"
@@ -460,12 +463,12 @@ bool Cast::loadConfig() {
 
 		/* version = */ stream->readUint16();	// We've already read it, this is offset 36
 
-		_field21 = stream->readSint16();
+		_movieDepth = stream->readSint16();
 		_field22 = stream->readSint32();
 		_field23 = stream->readSint32();
 
-		debugC(1, kDebugLoading, "Cast::loadConfig(): field17: %d, field18: %d, field19: %d, field21: %d, field22: %d field23: %d",
-			_field17, _field18, _field19, _field21, _field22, _field23);
+		debugC(1, kDebugLoading, "Cast::loadConfig(): field17: %d, field18: %d, field19: %d, movieDepth: %d, field22: %d field23: %d",
+			_field17, _field18, _field19, _movieDepth, _field22, _field23);
 	}
 
 	if (_version >= kFileVer400) {
@@ -560,6 +563,10 @@ bool Cast::loadConfig() {
 		_vm->setVersion(humanVer);
 	}
 
+	if (_movieDepth > 0) {
+		warning("STUB: loadConfig(): Movie bit depth is %d", _movieDepth);
+	}
+
 	delete stream;
 	return true;
 }
@@ -604,7 +611,7 @@ void Cast::saveConfig(Common::SeekableWriteStream *writeStream, uint32 offset) {
 
 	writeStream->writeUint16BE(_version);   		// 36
 
-	writeStream->writeUint16BE(_field21);           // 38
+	writeStream->writeUint16BE(_movieDepth);           // 38
 	writeStream->writeUint32BE(_field22);           // 40
 	writeStream->writeUint32BE(_field23);           // 44
 
@@ -688,7 +695,7 @@ void Cast::loadCast() {
 	// Font Directory
 	_vm->_wm->_fontMan->loadFonts(_castArchive->getPathName());
 
-	debugC(1, kDebugLoading, "****** Loading cast member data for for cast libID %d (%s)", _castLibID, _castName.c_str());
+	debugC(1, kDebugLoading, "****** Loading cast member data for cast libID %d (%s)", _castLibID, _castName.c_str());
 
 	// CastMember Information Array
 	if (_castArchive->hasResource(MKTAG('V', 'W', 'C', 'R'), -1)) {
@@ -844,7 +851,7 @@ void Cast::loadCast() {
 	for (auto &iterator : rte2) {
 		r = _castArchive->getResource(MKTAG('R','T','E','2'), iterator);
 		debugC(3, kDebugText, "RTE2: id %d", iterator - _castIDoffset);
-		_loadedRTE2s.setVal(iterator, new RTE2(this, *r));
+		_loadedRTE2s.setVal(iterator, new RTE2(this, *r, iterator));
 		delete r;
 	}
 
@@ -1037,7 +1044,10 @@ void Cast::writeCastInfo(Common::SeekableWriteStream *writeStream, uint32 castId
 
 		case 12:
 			castInfo.strings[12].data = (byte *)malloc(castInfo.strings[12].len);
-			memcpy(castInfo.strings[12].data, ci->xtraRect.data(), castInfo.strings[12].len);
+			WRITE_BE_INT32(castInfo.strings[12].data, ci->xtraRect.top);
+			WRITE_BE_INT32(castInfo.strings[12].data + 4, ci->xtraRect.left);
+			WRITE_BE_INT32(castInfo.strings[12].data + 8, ci->xtraRect.bottom);
+			WRITE_BE_INT32(castInfo.strings[12].data + 12, ci->xtraRect.right);
 			break;
 
 		case 13:
@@ -1153,7 +1163,7 @@ uint32 Cast::computeChecksum() {
 	check *= _field18 + 18;
 	check += _field19 + 19;
 	check *= _version + 20;
-	check += _field21 + 21;
+	check += _movieDepth + 21;
 	check += _field22 + 22;
 	check += _field23 + 23;
 	check += _field24 + 24;
@@ -1230,7 +1240,7 @@ uint32 Cast::getCastInfoStringLength(uint32 stringIndex, CastMemberInfo *ci) {
 		return ci->bpTable.size();
 
 	case 12:
-		return ci->xtraRect.size();
+		return 16;
 
 	case 13:
 		return 8;
@@ -1576,6 +1586,10 @@ void Cast::loadCastData(Common::SeekableReadStreamEndian &stream, uint16 id, Res
 		debugC(3, kDebugLoading, "Cast::loadCastData(): loading kCastTransition (id=%d, %d children)",  id, res->children.size());
 		target = new TransitionCastMember(this, id, castStream, _version);
 		break;
+	case kCastXtra:
+		debugC(3, kDebugLoading, "Cast::loadCastData(): loading kCastXtra (id=%d, %d children)",  id, res->children.size());
+		target = new XtraCastMember(this, id, castStream, _version);
+		break;
 	default:
 		warning("BUILDBOT: STUB: Cast::loadCastData(): Unhandled cast type: %d [%s] (id=%d, %d children)! This will be missing from the movie and may cause problems", castType, tag2str(castType), id, res->children.size());
 		// also don't try and read the strings... we don't know what this item is.
@@ -1597,7 +1611,7 @@ void Cast::loadCastData(Common::SeekableReadStreamEndian &stream, uint16 id, Res
 		warning("BUILDBOT: Left over bytes: %d in dataStream for id: %d type: %s", leftOver, id, castType2str((CastType) castType));
 
 	if (target) { // Skip unhandled casts
-		debugCN(3, kDebugLoading, "Children: ");
+		debugCN(3, kDebugLoading, "  Children: ");
 		for (uint child = 0; child < res->children.size(); child++) {
 			debugCN(3, kDebugLoading, "%d ", res->children[child].index);
 			target->_children.push_back(res->children[child]);
@@ -1892,16 +1906,16 @@ void Cast::loadCastInfo(Common::SeekableReadStreamEndian &stream, uint16 id) {
 		} else {
 			ci->imageQuality = READ_BE_INT32(castInfo.strings[21].data);
 
-			dumpS = Common::String::format("imageQuality: %d (0x%08X) ", ci->imageQuality, ci->imageQuality) + dumpS;
+			dumpS = Common::String::format("imageQuality: %d (0x%08X), ", ci->imageQuality, ci->imageQuality) + dumpS;
 		}
 		// fallthrough
 	case 20:
 		ci->comments = castInfo.strings[20].readString();
-		dumpS = Common::String::format("comments: '%s' ", ci->comments.c_str()) + dumpS;
+		dumpS = Common::String::format("comments: '%s', ", ci->comments.c_str()) + dumpS;
 		// fallthrough
 	case 19:
 		ci->modifiedBy = castInfo.strings[19].readString();
-		dumpS = Common::String::format("modifiedBy: '%s' ", ci->modifiedBy.c_str()) + dumpS;
+		dumpS = Common::String::format("modifiedBy: '%s', ", ci->modifiedBy.c_str()) + dumpS;
 		// fallthrough
 	case 18:
 		if (castInfo.strings[18].len != 4) {
@@ -1909,7 +1923,7 @@ void Cast::loadCastInfo(Common::SeekableReadStreamEndian &stream, uint16 id) {
 			Common::hexdump(castInfo.strings[18].data, castInfo.strings[18].len);
 		} else {
 			ci->modifiedTime = READ_BE_INT32(castInfo.strings[18].data);
-			dumpS = Common::String::format("modifiedTime: %d (0x%08X) ", ci->modifiedTime, ci->modifiedTime) + dumpS;
+			dumpS = Common::String::format("modifiedTime: %d (0x%08X), ", ci->modifiedTime, ci->modifiedTime) + dumpS;
 		}
 		// fallthrough
 	case 17:
@@ -1918,12 +1932,12 @@ void Cast::loadCastInfo(Common::SeekableReadStreamEndian &stream, uint16 id) {
 			Common::hexdump(castInfo.strings[17].data, castInfo.strings[17].len);
 		} else {
 			ci->creationTime = READ_BE_INT32(castInfo.strings[17].data);
-			dumpS = Common::String::format("creationTime: %d (0x%08X) ", ci->creationTime, ci->creationTime) + dumpS;
+			dumpS = Common::String::format("creationTime: %d (0x%08X), ", ci->creationTime, ci->creationTime) + dumpS;
 		}
 		// fallthrough
 	case 16:
-		ci->mediaFormatName = castInfo.strings[2].readString();
-		dumpS = Common::String::format("mediaFormatName: '%s' ", ci->mediaFormatName.c_str()) + dumpS;
+		ci->mediaFormatName = castInfo.strings[16].readString();
+		dumpS = Common::String::format("mediaFormatName: '%s', ", ci->mediaFormatName.c_str()) + dumpS;
 		// fallthrough
 	case 15:
 		if (castInfo.strings[15].len) {
@@ -1932,7 +1946,7 @@ void Cast::loadCastInfo(Common::SeekableReadStreamEndian &stream, uint16 id) {
 				Common::hexdump(castInfo.strings[15].data, castInfo.strings[15].len);
 			} else {
 				memcpy(ci->guid, castInfo.strings[15].data, 16);
-				dumpS = "guid: <data> " + dumpS;
+				dumpS = "guid: <data>, " + dumpS;
 			}
 		}
 		// fallthrough
@@ -1942,7 +1956,7 @@ void Cast::loadCastInfo(Common::SeekableReadStreamEndian &stream, uint16 id) {
 			Common::hexdump(castInfo.strings[14].data, castInfo.strings[14].len);
 			ci->dvWindowInfo = Common::Array<byte>(castInfo.strings[14].data, castInfo.strings[14].len);
 
-			dumpS = "dvWindowInfo: <data> " + dumpS;
+			dumpS = "dvWindowInfo: <data>, " + dumpS;
 		}
 		// fallthrough
 	case 13:
@@ -1951,16 +1965,19 @@ void Cast::loadCastInfo(Common::SeekableReadStreamEndian &stream, uint16 id) {
 			ci->scriptRect = Movie::readRect(*entryStream);
 			delete entryStream;
 
-			dumpS = Common::String::format("scriptRect: [%d,%d,%d,%d] ", ci->scriptRect.left, ci->scriptRect.top, ci->scriptRect.right, ci->scriptRect.bottom) + dumpS;
+			dumpS = Common::String::format("scriptRect: [%d,%d,%d,%d], ", ci->scriptRect.left, ci->scriptRect.top, ci->scriptRect.right, ci->scriptRect.bottom) + dumpS;
 		}
 		// fallthrough
 	case 12:
 		if (castInfo.strings[12].len) {
 			warning("Cast::loadCastInfo(): BUILDBOT: xtraRect for castid %d", id);
 			Common::hexdump(castInfo.strings[12].data, castInfo.strings[12].len);
-			ci->xtraRect = Common::Array<byte>(castInfo.strings[12].data, castInfo.strings[12].len);
+			ci->xtraRect.top = READ_BE_INT32(castInfo.strings[12].data);
+			ci->xtraRect.left = READ_BE_INT32(castInfo.strings[12].data + 4);
+			ci->xtraRect.bottom = READ_BE_INT32(castInfo.strings[12].data + 8);
+			ci->xtraRect.right = READ_BE_INT32(castInfo.strings[12].data + 12);
 
-			dumpS = "xtraRect: <data> " + dumpS;
+			dumpS = "xtraRect: <data>, " + dumpS;
 		}
 		// fallthrough
 	case 11:
@@ -1968,14 +1985,14 @@ void Cast::loadCastInfo(Common::SeekableReadStreamEndian &stream, uint16 id) {
 			warning("Cast::loadCastInfo(): BUILDBOT: bptable for castid %d", id);
 			Common::hexdump(castInfo.strings[11].data, castInfo.strings[11].len);
 			ci->bpTable = Common::Array<byte>(castInfo.strings[11].data, castInfo.strings[11].len);
-			dumpS = "bpTable: <data> " + dumpS;
+			dumpS = "bpTable: <data>, " + dumpS;
 		}
 		// fallthrough
 	case 10:
 		if (castInfo.strings[10].len) {
 			Common::hexdump(castInfo.strings[10].data, castInfo.strings[10].len);
 			ci->xtraDisplayName = castInfo.strings[10].readString(false); // C string
-			dumpS = Common::String::format("xtraDisplayName: '%s' ", ci->xtraDisplayName.c_str()) + dumpS;
+			dumpS = Common::String::format("xtraDisplayName: '%s', ", ci->xtraDisplayName.c_str()) + dumpS;
 		}
 		// fallthrough
 	case 9:
@@ -1985,7 +2002,7 @@ void Cast::loadCastInfo(Common::SeekableReadStreamEndian &stream, uint16 id) {
 				Common::hexdump(castInfo.strings[9].data, castInfo.strings[9].len);
 			} else {
 				memcpy(ci->xtraGuid, castInfo.strings[9].data, 16);
-				dumpS = "xtraGUID: <data> " + dumpS;
+				dumpS = "xtraGUID: <data>, " + dumpS;
 			}
 		}
 		// fallthrough
@@ -1994,7 +2011,7 @@ void Cast::loadCastInfo(Common::SeekableReadStreamEndian &stream, uint16 id) {
 			entryStream = new Common::MemoryReadStreamEndian(castInfo.strings[8].data, castInfo.strings[8].len, stream.isBE());
 			ci->rteEditInfo.read(entryStream);
 			delete entryStream;
-			dumpS = Common::String::format("rteEditInfo: { %s } ", ci->rteEditInfo.toString().c_str()) + dumpS;
+			dumpS = Common::String::format("rteEditInfo: { %s }, ", ci->rteEditInfo.toString().c_str()) + dumpS;
 		}
 		// fallthrough
 	case 7:
@@ -2002,7 +2019,7 @@ void Cast::loadCastInfo(Common::SeekableReadStreamEndian &stream, uint16 id) {
 			entryStream = new Common::MemoryReadStreamEndian(castInfo.strings[7].data, castInfo.strings[7].len, stream.isBE());
 			ci->textEditInfo.read(entryStream);
 			delete entryStream;
-			dumpS = Common::String::format("textEditInfo: { %s } ", ci->textEditInfo.toString().c_str()) + dumpS;
+			dumpS = Common::String::format("textEditInfo: { %s }, ", ci->textEditInfo.toString().c_str()) + dumpS;
 		}
 		// fallthrough
 	case 6:
@@ -2015,7 +2032,7 @@ void Cast::loadCastInfo(Common::SeekableReadStreamEndian &stream, uint16 id) {
 				ci->scriptStyle.read(*entryStream, this);
 			delete entryStream;
 
-			dumpS = "scriptStyle: <data> " + dumpS;
+			dumpS = "scriptStyle: <data>, " + dumpS;
 		}
 		// fallthrough
 	case 5:
@@ -2023,7 +2040,7 @@ void Cast::loadCastInfo(Common::SeekableReadStreamEndian &stream, uint16 id) {
 			entryStream = new Common::MemoryReadStreamEndian(castInfo.strings[5].data, castInfo.strings[5].len, stream.isBE());
 			ci->scriptEditInfo.read(entryStream);
 			delete entryStream;
-			dumpS = Common::String::format("scriptEditInfo: { %s } ", ci->scriptEditInfo.toString().c_str()) + dumpS;
+			dumpS = Common::String::format("scriptEditInfo: { %s }, ", ci->scriptEditInfo.toString().c_str()) + dumpS;
 		}
 		// fallthrough
 	case 4:
@@ -2031,30 +2048,30 @@ void Cast::loadCastInfo(Common::SeekableReadStreamEndian &stream, uint16 id) {
 		if (_version < kFileVer500) {
 			ci->fileType = castInfo.strings[4].readString();
 
-			dumpS = Common::String::format("fileType: '%s' ", ci->fileType.c_str()) + dumpS;
+			dumpS = Common::String::format("fileType: '%s', ", ci->fileType.c_str()) + dumpS;
 
 		} else {
 			ci->propInit = castInfo.strings[4].readString();
 
-			dumpS = Common::String::format("propInit: '%s' ", ci->propInit.c_str()) + dumpS;
+			dumpS = Common::String::format("propInit: '%s', ", ci->propInit.c_str()) + dumpS;
 		}
 		// fallthrough
 	case 3:
 		ci->fileName = castInfo.strings[3].readString();
-		dumpS = Common::String::format("fileName: '%s' ", ci->fileName.c_str()) + dumpS;
+		dumpS = Common::String::format("fileName: '%s', ", ci->fileName.c_str()) + dumpS;
 		// fallthrough
 	case 2:
 		ci->directory = castInfo.strings[2].readString();
-		dumpS = Common::String::format("directory: '%s' ", ci->directory.c_str()) + dumpS;
+		dumpS = Common::String::format("directory: '%s', ", ci->directory.c_str()) + dumpS;
 		// fallthrough
 	case 1:
 		ci->name = castInfo.strings[1].readString();
-		dumpS = Common::String::format("name: '%s' ", ci->name.c_str()) + dumpS;
+		dumpS = Common::String::format("name: '%s', ", ci->name.c_str()) + dumpS;
 		// fallthrough
 	case 0:
 		ci->script = castInfo.strings[0].readString(false);
 		if (!ci->script.empty()) {
-			dumpS = Common::String::format("script: %d bytes ", ci->script.size()) + dumpS;
+			dumpS = Common::String::format("script: %d bytes, ", ci->script.size()) + dumpS;
 		}
 		// fallthrough
 	case -1:
@@ -2083,9 +2100,9 @@ void Cast::loadCastInfo(Common::SeekableReadStreamEndian &stream, uint16 id) {
 	}
 
 	// For SoundCastMember, read the flags in the CastInfo
-	if (_version >= kFileVer400 && _version < kFileVer600 && member->_type == kCastSound) {
+	if (_version >= kFileVer400 && _version < kFileVer700 && member->_type == kCastSound) {
 		((SoundCastMember *)member)->_looping = castInfo.flags & 16 ? 0 : 1;
-	} else if (_version >= kFileVer600 && member->_type == kCastSound) {
+	} else if (_version >= kFileVer700 && member->_type == kCastSound) {
 		warning("STUB: Cast::loadCastInfo(): Sound cast member info not yet supported for version v%d (%d)", humanVersion(_version), _version);
 	}
 
@@ -2173,6 +2190,62 @@ void Cast::loadSord(Common::SeekableReadStreamEndian &stream) {
 	}
 
 	debugC(1, kDebugLoading, "Cast::loadSord(): number of entries: %d", numEntries);
+}
+
+bool Cast::importFileInto(int castId, const Common::Path &path) {
+	// hold off on overwriting the target until we're sure it is loaded
+	Common::SeekableReadStream *file = Common::MacResManager::openFileOrDataFork(path);
+	if (!file) {
+		warning("Cast::importFileInto: file not found");
+		return false;
+	}
+	CastMember *member = nullptr;
+	uint32 magic1 = file->readUint32BE();
+	uint32 magic2 = file->readUint32BE();
+	uint32 magic3 = file->readUint32BE();
+	file->seek(528, SEEK_SET);
+	uint32 magic4 = file->readUint16BE();
+	file->seek(0, SEEK_SET);
+	if (magic1 == MKTAG('R', 'I', 'F', 'F') &&
+		magic3 == MKTAG('W', 'A', 'V', 'E')) {
+		// WAV file
+		member = new SoundCastMember(this, castId);
+	} else if (magic1 == MKTAG('F', 'O', 'R', 'M') &&
+		(magic3 == MKTAG('A', 'I', 'F', 'F') ||
+		 magic3 == MKTAG('A', 'I', 'F', 'C'))) {
+		// AIFF file
+		member = new SoundCastMember(this, castId);
+	} else if (magic2 == MKTAG('m', 'o', 'o', 'v') ||
+		magic2 == MKTAG('m', 'd', 'a', 't')) {
+		// QuickTime file
+		member = new DigitalVideoCastMember(this, castId);
+		((DigitalVideoCastMember *)member)->_qtmovie = true;
+	} else if (magic1 == MKTAG('R', 'I', 'F', 'F') && (magic3 == MKTAG('A', 'V', 'I', ' '))) {
+		// AVI file
+		member = new DigitalVideoCastMember(this, castId);
+		((DigitalVideoCastMember *)member)->_avimovie = true;
+	} else if ((magic1 >> 16) == MKTAG16('B', 'M')) {
+		// Windows Bitmap file
+		Image::ImageDecoder *img = new Image::BitmapDecoder();
+		img->loadStream(*file);
+		member = new BitmapCastMember(this, castId, img);
+	} else if ((magic4 == 0xffff) || (magic4 == 0xfffe)) {
+		// Apple PICT file
+		Image::ImageDecoder *img = new Image::PICTDecoder();
+		img->loadStream(*file);
+		member = new BitmapCastMember(this, castId, img);
+	}
+	delete file;
+
+	if (member) {
+		setCastMember(castId, member);
+		CastMemberInfo *info = new CastMemberInfo();
+		info->fileName = path.toString(g_director->_dirSeparator);
+		_castsInfo[castId] = info;
+		return true;
+	}
+
+	return false;
 }
 
 // Pattern tiles

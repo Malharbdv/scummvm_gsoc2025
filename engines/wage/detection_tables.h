@@ -86,7 +86,7 @@ static const ADGameDescription gameDescriptions[] = {
 	FANGAMEN("Alien Clutch", "Alien Clutch 2.0", "5c783f6b7f4a7d8d49e138be94e00f5a", 514976),
 	BIGGAME("amot", "v1.8", "A Mess O' Trouble 1.8", "57de8f1f79a24fa1a296aa10242c3648", 1842848),
 	FANGAMEN("The Adventures of Steve Reeve", "TAoSR", "e8b8ab3a838382125594aae17d53a4e7", 843323),
-	FANGAMEN("The Ashland Revolution", "Ashland 1.0", "f6ff38b24953ae818a000f88998e938d", 150220),
+	FANGAMEND("The Ashland Revolution", "Ashland 1.0", "f6ff38b24953ae818a000f88998e938d", 150220),
 	FANGAMEND("The Ashland Revolution", "xn--The Ashland Revolution Demo-uc9p", "18f1f5d1081b9a5676ccfb0c3b857059", 144767), // Original file name "The Ashland Revolution Demo†"
 	FANGAMEND("The Ashland Revolution", "Ashland Demo", "7a340e5ea03f7468717de408fb5b13fb", 149828), // alt version
 	FANGAMEND("The Ashland Revolution", "The Ashland Revolution Demo", "de6fdfe2b9d9efc0ea842e2bde68673a", 144753), // alt version
@@ -113,7 +113,6 @@ static const ADGameDescription gameDescriptions[] = {
 	FANGAME("Castle of Ert", "289d1f944d7c30b257587a7a49579d0f", 198713), // alt version
 	FANGAMEN("Castle of Ert", "Castle of Ert V1.2", "bc1c119b4a95ea6891a6e22c35e6c2d8", 201984),
 	FANGAMEN("City Adventure", "City Adventure 1.1", "0c9415ea525ffeedb346f7a62ebe6cd3", 285789),
-	FANGAME("Color by Number", "8fc77e5976ca25d05cf74db3ec3e5ef2", 528306),
 	FANGAME("Crystal Adventure", "d9e82fc3a58217a0ea4d6fddcb7fbc2a", 477918),
 	FANGAMEN("Crystal Search", "Crystal Search 1.5", "a9dda0422c6424e915363745ad2ecc41", 517019),
 	FANGAMEN("Dash Hansen and the Search for the Black Orchid", "Dash Hansen", "555e07344506720c8e4a29e1b5ba3578", 257129),
@@ -175,7 +174,6 @@ static const ADGameDescription gameDescriptions[] = {
 	BIGGAMED("grailquest", "Demo", "GrailQuest.demo", "c0ef30ef7e4119fe76c5fbe2f930e7b1", 190810),
 	FANGAME("Haikook", "405d383b273a0252645962e0e664be20", 419636),
 	FANGAME("Grendel-Dazz", "968addd863d8e5c90f73d029c9240ded", 267156),
-	FANGAME("Grey Tower", "02d0bb7a8c278d3789616129d47f15c1", 397248), // v1.5.2
 	FANGAMEN("Haunted House", "The haunted house 1.4", "655ff082160909beb83b99979cdfc2c6", 107959),
 	FANGAMEN("Haunted House", "Haunted House 1.5", "5e34e9fa13f4c90876f10a40ea1d1c79", 177244),
 	FANGAMEN("Haunted University", "Haunted U. v2.04", "d9511905bb908a0c3ea13c996e053aec", 1674435),
@@ -253,7 +251,6 @@ static const ADGameDescription gameDescriptions[] = {
 	FANGAMEN("Mormonoids from the Deep", "Mormonoids 1.25", "1a7ee052b375f0c0a4c18836c978ce5b", 645077), // alt version
 	FANGAMEN("Mountain of Mayhem", "xn--Mountain of Mayhem -3g6k", "634211b004371635d191ae0687035501", 749747), // Original file name "Mountain of Mayhem †"
 	FANGAME("Mountain of Mayhem", "c83a5703b3ea95f465839f4f54ef0805", 749733), // alt version
-	FANGAME("Muddy Water", "711dd9d154d13c31bc216ef8539bb095", 662438), // v1.3.2
 	FANGAME("Mystery of the Moors", "593dc2fcb92c0f5f4d94b5fc390a2ba2", 849909),
 	FANGAME("Necropolis", "70fbba8a0b1626216f674df2ca9c58ba", 397396),
 	FANGAME("Nightcrawler Ned", "8423fc015c395bd6be54a7ea69170d99", 366286),
